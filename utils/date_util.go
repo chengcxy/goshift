@@ -49,6 +49,11 @@ func PastDayDate(pastDay int) time.Time {
 	return time.Now().AddDate(0, 0, -pastDay)
 }
 
+func GetYestory() string {
+	t := PastDayDate(1)
+	return t.Format(DayFormatter)
+}
+
 func FutureDayDate(futureDay int) time.Time {
 	return time.Now().AddDate(0, 0, futureDay)
 }

@@ -134,7 +134,7 @@ func (s *Scheduler) Run() error {
 }
 
 func (s *Scheduler) run(tm *meta.TaskMeta) error {
-	fmt.Printf("run taskMeta is %s \n ", tm)
+	fmt.Printf("run taskMeta is %v \n ", tm)
 	readerPlugin, err := plugin.GetPlugin(tm.FromDbType)
 	if err != nil {
 		return err
