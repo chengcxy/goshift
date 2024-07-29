@@ -1,0 +1,62 @@
+{
+  "task_meta_mysql": {
+      "host": "LOCAL_DW_MYSQL_Z_ETL_HOST",
+      "user": "LOCAL_DW_MYSQL_Z_ETL_USER",
+      "password": "LOCAL_DW_MYSQL_Z_ETL_PASSWORD",
+      "db": "z_etl",
+      "port": 3306,
+      "charset": "utf8"
+  },
+  "from":{
+      "mysql":{
+          "local_dw_test":{
+            "host": "LOCAL_DW_MYSQL_TEST_HOST",
+            "user": "LOCAL_DW_MYSQL_TEST_USER",
+            "password": "LOCAL_DW_MYSQL_TEST_PASSWORD",
+            "db": "test",
+            "port": 3306,
+            "charset": "utf8"
+          },
+          "local_dw_blog":{
+            "host": "LOCAL_DW_MYSQL_BLOG_HOST",
+            "user": "LOCAL_DW_MYSQL_BLOG_USER",
+            "password": "LOCAL_DW_MYSQL_BLOG_PASSWORD",
+            "db": "blog",
+            "port": 3306,
+            "charset": "utf8"
+          }
+      }
+   },
+  "to":{
+    "mysql":{
+      "local_dw_test":{
+        "host": "LOCAL_DW_MYSQL_TEST_HOST",
+        "user": "LOCAL_DW_MYSQL_TEST_USER",
+        "password": "LOCAL_DW_MYSQL_TEST_PASSWORD",
+        "db": "test",
+        "port": 3306,
+        "charset": "utf8"
+      },
+      "local_dw_blog":{
+        "host": "LOCAL_DW_MYSQL_BLOG_HOST",
+        "user": "LOCAL_DW_MYSQL_BLOG_USER",
+        "password": "LOCAL_DW_MYSQL_BLOG_PASSWORD",
+        "db": "blog",
+        "port": 3306,
+        "charset": "utf8"
+      }
+    }
+  },
+  "roboter": {
+    "token": "TEST_DINGDING_TOKEN",
+    "atMobiles": [
+      "188****8263"
+    ],
+    "isAtAll": false,
+    "roboter_type": "dingding",
+    "hook_keyword": "任务报警"
+  },
+  "log":{
+    "log_path": "../logs"
+  }
+}
