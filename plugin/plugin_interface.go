@@ -13,7 +13,7 @@ import (
 type Plugin interface {
 	Connect(config *configor.Config, key string) (Plugin, error)
 	Read(ctx context.Context, writer Plugin, tm *meta.TaskMeta) error
-	Exec(query string, args ...interface{}) (sql.Result, error)
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
 	Close()
 }
 

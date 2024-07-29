@@ -96,7 +96,7 @@ func (tp TrinoPlugin) GetTotalSplits(ctx context.Context, tm *meta.TaskMeta) (Sp
 	return
 }
 
-func (tp TrinoPlugin) worker(wid int, tasks chan *TaskParams, resultChan chan *Result, finishedChan chan int, dones chan *workerResult, tm *meta.TaskMeta, writer Plugin) {
+func (tp TrinoPlugin) worker(ctx context.Context, wid int, tasks chan *TaskParams, resultChan chan *Result, finishedChan chan int, dones chan *workerResult, tm *meta.TaskMeta, writer Plugin) {
 	executed := 0
 	for p := range tasks {
 		task := &Task{
@@ -104,7 +104,7 @@ func (tp TrinoPlugin) worker(wid int, tasks chan *TaskParams, resultChan chan *R
 			wid:       wid,
 			status:    0,
 		}
-		resultChan <- tp.ExecuteTask(wid, task, finishedChan, tm, writer)
+		resultChan <- tp.ExecuteTask(ctx, wid, task, finishedChan, tm, writer)
 		executed += 1
 	}
 	dones <- &workerResult{
@@ -112,7 +112,7 @@ func (tp TrinoPlugin) worker(wid int, tasks chan *TaskParams, resultChan chan *R
 		executed: executed,
 	}
 }
-func (tp TrinoPlugin) ExecuteTask(wid int, task *Task, finishedChan chan int, tm *meta.TaskMeta, writer Plugin) *Result {
+func (tp TrinoPlugin) ExecuteTask(ctx context.Context, wid int, task *Task, finishedChan chan int, tm *meta.TaskMeta, writer Plugin) *Result {
 	start, end := task.taskParam.start, task.taskParam.end
 	logger.Infof("ExecuteTask start is %d,end is %d", start, end)
 	q := fmt.Sprintf(BaseQueryPartition, tm.FromDb, tm.FromTable, tm.SrcPk, tm.SrcPk)
@@ -140,7 +140,7 @@ func (tp TrinoPlugin) ExecuteTask(wid int, task *Task, finishedChan chan int, tm
 		values = append(values, rowValues...)
 		if len(values) == tm.WriteBatch*len(columns) {
 			insertSql := fmt.Sprintf(BaseInsertSql, tm.ToDb, tm.ToTable, strings.Join(insertKeys, ","), strings.Join(fmts, ","))
-			r, _ := writer.Exec(insertSql, values...)
+			r, _ := writer.ExecContext(ctx, insertSql, values...)
 			num, _ := r.RowsAffected()
 			syncNum += num
 			values = values[:0]
@@ -150,7 +150,7 @@ func (tp TrinoPlugin) ExecuteTask(wid int, task *Task, finishedChan chan int, tm
 	}
 	if len(values) > 0 {
 		insertSql := fmt.Sprintf(BaseInsertSql, tm.ToDb, tm.ToTable, strings.Join(insertKeys, ","), strings.Join(fmts, ","))
-		r, err := writer.Exec(insertSql, values...)
+		r, err := writer.ExecContext(ctx, insertSql, values...)
 		if err != nil {
 			logger.Errorf("insertsql %s error:%v", insertSql, err)
 		}
@@ -197,7 +197,7 @@ func (tp TrinoPlugin) Read(ctx context.Context, writer Plugin, tm *meta.TaskMeta
 		}
 	}()
 	for wid := 0; wid < tm.WorkerNum; wid++ {
-		go tp.worker(wid, tasks, resultChan, finishedChan, dones, tm, writer)
+		go tp.worker(ctx, wid, tasks, resultChan, finishedChan, dones, tm, writer)
 	}
 	go func() {
 		for wid := 0; wid < tm.WorkerNum; wid++ {

@@ -38,6 +38,7 @@ func initConsoleZapLog() {
 		encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
 	encoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
+	encoderConfig.EncodeCaller = zapcore.ShortCallerEncoder //FullCallerEncoder 显示全部路径
 	atom := zap.NewAtomicLevelAt(zap.DebugLevel)
 	core := zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), zapcore.AddSync(os.Stdout), atom)
 	consoleZapLog = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(zap.ErrorLevel)).Sugar()

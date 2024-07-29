@@ -68,11 +68,11 @@ type workerResult struct {
 	executed int
 }
 
-func (m MysqlPlugin) Exec(query string, args ...interface{}) (sql.Result, error) {
-	return m.client.Exec(query, args...)
+func (m MysqlPlugin) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	return m.client.ExecContext(ctx, query, args...)
 }
 
-func (m MysqlPlugin) ExecuteTask(wid int, task *Task, finishedChan chan int, tm *meta.TaskMeta, writer Plugin) *Result {
+func (m MysqlPlugin) ExecuteTask(ctx context.Context, wid int, task *Task, finishedChan chan int, tm *meta.TaskMeta, writer Plugin) *Result {
 	start, end := task.taskParam.start, task.taskParam.end
 	logger.Infof("ExecuteTask start is %d,end is %d", start, end)
 	q := fmt.Sprintf(BaseQuery, tm.FromDb, tm.FromTable, tm.SrcPk, tm.SrcPk)
@@ -100,7 +100,7 @@ func (m MysqlPlugin) ExecuteTask(wid int, task *Task, finishedChan chan int, tm 
 		values = append(values, rowValues...)
 		if len(values) == tm.WriteBatch*len(columns) {
 			insertSql := fmt.Sprintf(BaseInsertSql, tm.ToDb, tm.ToTable, strings.Join(insertKeys, ","), strings.Join(fmts, ","))
-			r, err := writer.Exec(insertSql, values...)
+			r, err := writer.ExecContext(ctx, insertSql, values...)
 			if err != nil {
 				logger.Errorf("insertsql:%s error:%v", insertSql, err)
 			}
@@ -113,7 +113,7 @@ func (m MysqlPlugin) ExecuteTask(wid int, task *Task, finishedChan chan int, tm 
 	}
 	if len(values) > 0 {
 		insertSql := fmt.Sprintf(BaseInsertSql, tm.ToDb, tm.ToTable, strings.Join(insertKeys, ","), strings.Join(fmts, ","))
-		r, err := writer.Exec(insertSql, values...)
+		r, err := writer.ExecContext(ctx, insertSql, values...)
 		if err != nil {
 			logger.Errorf("insertsql:%s error:%v", insertSql, err)
 		}
@@ -132,7 +132,7 @@ func (m MysqlPlugin) ExecuteTask(wid int, task *Task, finishedChan chan int, tm 
 	}
 
 }
-func (m MysqlPlugin) worker(wid int, tasks chan *TaskParams, resultChan chan *Result, finishedChan chan int, dones chan *workerResult, tm *meta.TaskMeta, writer Plugin) {
+func (m MysqlPlugin) worker(ctx context.Context, wid int, tasks chan *TaskParams, resultChan chan *Result, finishedChan chan int, dones chan *workerResult, tm *meta.TaskMeta, writer Plugin) {
 	executed := 0
 	for p := range tasks {
 		task := &Task{
@@ -140,7 +140,7 @@ func (m MysqlPlugin) worker(wid int, tasks chan *TaskParams, resultChan chan *Re
 			wid:       wid,
 			status:    0,
 		}
-		resultChan <- m.ExecuteTask(wid, task, finishedChan, tm, writer)
+		resultChan <- m.ExecuteTask(ctx, wid, task, finishedChan, tm, writer)
 		executed += 1
 	}
 	dones <- &workerResult{
@@ -316,7 +316,7 @@ func (m MysqlPlugin) init(ctx context.Context, writer Plugin, tm *meta.TaskMeta)
 		}
 	}()
 	for wid := 0; wid < tm.WorkerNum; wid++ {
-		go m.worker(wid, tasks, resultChan, finishedChan, dones, tm, writer)
+		go m.worker(ctx, wid, tasks, resultChan, finishedChan, dones, tm, writer)
 	}
 	go func() {
 		for wid := 0; wid < tm.WorkerNum; wid++ {
