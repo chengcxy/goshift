@@ -29,7 +29,7 @@ func init() {
 	flag.StringVar(&Env, "e", "local", "运行的环境-json文件前缀 dev/test/prod/local")
 	flag.BoolVar(&UsedEnv, "UsedEnv", true, "是否走环境变量")
 	flag.StringVar(&Cmd, "cmd", "sync", "命令")
-	flag.StringVar(&Mode, "mode", "increase", "模式")
+	flag.StringVar(&Mode, "mode", "init", "模式")
 	flag.StringVar(&TaskId, "id", "1", "任务id")
 	flag.StringVar(&ToApp, "to_app", "test_dw", "往什么系统同步")
 	flag.IntVar(&Concurrency, "concurrency", 4, "并发任务数")

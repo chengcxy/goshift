@@ -21,5 +21,5 @@ type TaskMeta struct {
 	WriteBatch   int                    `json:"write_batch"`   //读取batch
 	WorkerNum    int                    `json:"worker_num"`    //读取batch
 	Params       map[string]interface{} `json:"params"`        //params
-
+	Mode         string                 `json:"mode"`          //params
 }

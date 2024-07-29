@@ -64,9 +64,20 @@ func (tp TrinoPlugin) Connect(config *configor.Config, key string) (Plugin, erro
 	}, err
 }
 
-func (tp TrinoPlugin) GetTotalSplits(ctx context.Context, tm *meta.TaskMeta, start, end int64, batch int) (Splits []*TaskParams) {
+func (tp TrinoPlugin) GetTotalSplits(ctx context.Context, tm *meta.TaskMeta) (Splits []*TaskParams, err error) {
+	var minId, maxId int64
+	q := fmt.Sprintf(BaseQueryMinMaxPartion, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable)
+	err = tp.client.QueryRowContext(ctx, q, utils.GetYestory()).Scan(&minId, &maxId)
+	if err != nil {
+		logger.Errorf("get min max error %v", err)
+		return
+	}
+	minId = minId - 1
+	logger.Infof("minid:%d,maxId:%d", minId, maxId)
+	start := minId
+	end := maxId
 	for start < end {
-		q := fmt.Sprintf(BaseGetNextPkPartition, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable, tm.SrcPk, start, batch, tm.SrcPk)
+		q := fmt.Sprintf(BaseGetNextPkPartition, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable, tm.SrcPk, start, tm.ReadBatch, tm.SrcPk)
 		logger.Infof("query next pk is \n %s", q)
 		var nextId int64
 		err := tp.client.QueryRowContext(ctx, q, utils.GetYestory()).Scan(&nextId)
@@ -160,16 +171,11 @@ func (tp TrinoPlugin) ExecuteTask(wid int, task *Task, finishedChan chan int, tm
 }
 
 func (tp TrinoPlugin) Read(ctx context.Context, writer Plugin, tm *meta.TaskMeta) error {
-	var minId, maxId int64
-	q := fmt.Sprintf(BaseQueryMinMaxPartion, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable)
-	err := tp.client.QueryRowContext(ctx, q, utils.GetYestory()).Scan(&minId, &maxId)
+	Splits, err := tp.GetTotalSplits(ctx, tm)
 	if err != nil {
-		logger.Errorf("get min max error %v", err)
+		logger.Errorf("split min max error:%v", err)
 		return err
 	}
-	minId = minId - 1
-	logger.Infof("minid:%d,maxId:%d", minId, maxId)
-	Splits := tp.GetTotalSplits(ctx, tm, minId, maxId, tm.ReadBatch)
 	totalTask := len(Splits)
 	tasks := make(chan *TaskParams, 0)
 	finishedChan := make(chan int, 0)

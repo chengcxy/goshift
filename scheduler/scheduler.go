@@ -71,6 +71,7 @@ func (s *Scheduler) getTasksinfo() error {
 			WriteBatch:   writeBatch,
 			WorkerNum:    workerNum,
 			Params:       p,
+			Mode:         s.Cmdline.Mode,
 		}
 		s.Tasks = append(s.Tasks, tm)
 	}

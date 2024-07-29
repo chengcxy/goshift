@@ -148,11 +148,27 @@ func (m MysqlPlugin) worker(wid int, tasks chan *TaskParams, resultChan chan *Re
 		executed: executed,
 	}
 }
-func (m MysqlPlugin) GetTotalSplits(ctx context.Context, tm *meta.TaskMeta, start, end int64, batch int) (Splits []*TaskParams) {
+func (m MysqlPlugin) GetTotalSplits(ctx context.Context, tm *meta.TaskMeta) (Splits []*TaskParams, err error) {
+	var minId, maxId int64
+	q := fmt.Sprintf(BaseQueryMinMax, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable)
+	err = m.client.QueryRowContext(ctx, q).Scan(&minId, &maxId)
+	if err != nil {
+		logger.Errorf("get min max error %v", err)
+		return
+	}
+	//全量模式 读src表的最小最大id 增量模式 最小取min(src,dest),最大取max(src_dest)
+	if tm.Mode == "init" {
+		minId = minId - 1
+	} else {
+		//暂时先不考虑增量
+		minId = minId - 1
+	}
+	start := minId
+	end := maxId
+	logger.Infof("minid:%d,maxId:%d", minId, maxId)
 	for start < end {
-		q := fmt.Sprintf(BaseGetNextPk, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable, tm.SrcPk, start, batch, tm.SrcPk)
+		q := fmt.Sprintf(BaseGetNextPk, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable, tm.SrcPk, start, tm.ReadBatch, tm.SrcPk)
 		logger.Infof("query next pk is \n %s", q)
-
 		var nextId int64
 		err := m.client.QueryRowContext(ctx, q).Scan(&nextId)
 		if err != nil {
@@ -265,16 +281,20 @@ func (m MysqlPlugin) ExecuteContext(ctx context.Context, sql string, args ...int
 }
 
 func (m MysqlPlugin) Read(ctx context.Context, writer Plugin, tm *meta.TaskMeta) error {
-	var minId, maxId int64
-	q := fmt.Sprintf(BaseQueryMinMax, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable)
-	err := m.client.QueryRowContext(ctx, q).Scan(&minId, &maxId)
+	if tm.Mode == "init" {
+		return m.init(ctx, writer, tm)
+	} else {
+		logger.Errorf("not support != init mode")
+		return errors.New("not support != init mode")
+	}
+}
+
+func (m MysqlPlugin) init(ctx context.Context, writer Plugin, tm *meta.TaskMeta) error {
+	Splits, err := m.GetTotalSplits(ctx, tm)
 	if err != nil {
-		logger.Errorf("get min max error %v", err)
+		logger.Errorf("split min max error:%v", err)
 		return err
 	}
-	minId = minId - 1
-	logger.Infof("minid:%d,maxId:%d", minId, maxId)
-	Splits := m.GetTotalSplits(ctx, tm, minId, maxId, tm.ReadBatch)
 	totalTask := len(Splits)
 	tasks := make(chan *TaskParams, 0)
 	finishedChan := make(chan int, 0)
@@ -315,7 +335,6 @@ func (m MysqlPlugin) Read(ctx context.Context, writer Plugin, tm *meta.TaskMeta)
 	logger.Infof("from mysql reader data totalSyncNum %d success", totalSyncNum)
 	return nil
 }
-
 func (m MysqlPlugin) Close() {
 	m.client.Close()
 }
