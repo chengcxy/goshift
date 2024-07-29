@@ -102,7 +102,7 @@ func (s *Scheduler) worker(wid int, chs chan *meta.TaskMeta, results chan *Resul
 }
 
 func (s *Scheduler) Run() error {
-	
+
 	//判断是否ctx Done
 	s.getTasksinfo()
 	chs := make(chan *meta.TaskMeta, 0)
