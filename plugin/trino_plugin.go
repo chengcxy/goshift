@@ -207,7 +207,7 @@ func (tp TrinoPlugin) Read(ctx context.Context, writer Plugin, tm *meta.TaskMeta
 		logger.Infof("taskIndex:%d (start:%d:end:%d),wid:%d,syncNum:%d,status:%d \n", r.taskParam.index, r.taskParam.start, r.taskParam.end, r.wid, r.syncNum, r.status)
 		totalSyncNum += r.syncNum
 	}
-	logger.Infof("from trino reader data write success")
+	logger.Infof("from trino reader data totalSyncNum %d success", totalSyncNum)
 	return nil
 }
 
