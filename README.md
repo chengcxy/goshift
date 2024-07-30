@@ -42,3 +42,61 @@ VALUES
 	(5, 'local_dw', 'mysql', 'blog', 'qcc_change_history', 'local_dw', 'mysql', 'blog', 'qcc_change_history2', '{\n	\"pk\": {\n		\"src\": \"id\",\n		\"dest\": \"id\"\n	},\n	\"diff_column\": {\n		\"src\": \"update_time\",\n		\"dest\": \"update_time\"\n	},\n	\"worker_num\": 20,\n	\"read_batch\": 5000,\n	\"write_batch\": 500\n}', 1, '增量导入', '1', '18811788263', '2021-03-30 16:13:34', '2024-07-08 11:00:11');
 
 ```
+## 3.数据表数据说明
+
+```
+表的主键id代表一个任务id,其中from_db_type代表读取的reader数据库类型，
+to_db_type代表写入writer的数据库类型，这个类型会在plugin里注册。
+这里以mysql为例。
+如何让程序自动找到reader和writer的配置并自动连接,在/etc/local.json里配置。
+reader的配置 from.$from_db_type.$from_app_$from_db
+writer的配置 to.$to_db_type.$to_app_$to_db
+params参数 
+pk代表切分键,src的value对应reader表的列名
+read_batch 读取批次 根据pk切分
+write_batch 多少条一个批次写入
+worker_num 开启多少worker并发执行任务
+```
+
+## 4.编译
+```
+//macOs系统
+make mac 
+
+//linux系统
+make linux
+
+```
+
+## 启动命令
+```
+cd cmd
+
+./goshift -c ../etc -e local -cmd sync -mode init -id 5
+
+
+-c 配置文件的路径
+-e 运行的环境 按需自己去添加dev.json/test.json/prod.json
+-cmd 命令 暂支持sync 后续拓展checkTaskParams等命令
+-mode init/increase 全量和增量模式 目前先支持全量
+```
+
+
+## 日志
+```
+2024-07-30T21:36:51+08:00	INFO	plugin/mysql_plugin.go:357	taskIndex:44 (start:15191022:end:15196022),wid:4,syncNum:5000,status:2
+
+2024-07-30T21:36:51+08:00	INFO	plugin/mysql_plugin.go:341	workerid 1 executed:3
+
+2024-07-30T21:36:51+08:00	INFO	plugin/mysql_plugin.go:332	[finished process is 48/48,unfinished is 0/48]
+
+2024-07-30T21:36:51+08:00	INFO	plugin/mysql_plugin.go:357	taskIndex:46 (start:15201022:end:15206022),wid:1,syncNum:5000,status:2
+
+2024-07-30T21:36:51+08:00	INFO	plugin/mysql_plugin.go:360	from mysql reader data totalSyncNum 237172 success
+2024-07-30T21:36:51+08:00	INFO	scheduler/scheduler.go:203	read result is &{TaskId:5 Err:<nil> SyncNum:237172 Tm:0xc00021c900}
+2024-07-30T21:36:51+08:00	INFO	scheduler/scheduler.go:134	taskid:5 result &{TaskId:5 Err:<nil> SyncNum:237172 Tm:0xc00021c900}
+2024-07-30T21:36:51+08:00	INFO	scheduler/scheduler.go:139	taskid:5 success
+2024-07-30T21:36:51+08:00	INFO	scheduler/scheduler.go:154	total tasks:1 successed:1,failed 0
+2024-07-30T21:36:51+08:00	INFO	scheduler/scheduler.go:155	task status success
+```
+
