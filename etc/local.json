@@ -1,0 +1,71 @@
+{
+  "task_meta_mysql": {
+      "host": "LOCAL_DW_MYSQL_Z_ETL_HOST",
+      "user": "LOCAL_DW_MYSQL_Z_ETL_USER",
+      "password": "LOCAL_DW_MYSQL_Z_ETL_PASSWORD",
+      "db": "z_etl",
+      "port": 3306,
+      "charset": "utf8"
+  },
+  "from":{
+      "mysql":{
+          "local_dw_test":{
+            "host": "LOCAL_DW_MYSQL_TEST_HOST",
+            "user": "LOCAL_DW_MYSQL_TEST_USER",
+            "password": "LOCAL_DW_MYSQL_TEST_PASSWORD",
+            "db": "test",
+            "port": 3306,
+            "charset": "utf8"
+          },
+          "local_dw_blog":{
+            "host": "LOCAL_DW_MYSQL_Z_ETL_HOST",
+            "user": "LOCAL_DW_MYSQL_Z_ETL_USER",
+            "password": "LOCAL_DW_MYSQL_Z_ETL_PASSWORD",
+            "db": "blog",
+            "port": 3306,
+            "charset": "utf8"
+          }
+      },
+      "trino":{
+        "local_dw_dw":{
+          "host":"LOCAL_DW_TRINO_Z_ETL_HOST",
+          "port":8082,
+          "user":"LOCAL_DW_TRINO_Z_ETL_USER",
+          "catalog":"hive",
+          "schema":"dw"
+        }
+      }
+  },
+  "to":{
+    "mysql":{
+      "local_dw_test":{
+        "host": "LOCAL_DW_MYSQL_TEST_HOST",
+        "user": "LOCAL_DW_MYSQL_TEST_USER",
+        "password": "LOCAL_DW_MYSQL_TEST_PASSWORD",
+        "db": "test",
+        "port": 3306,
+        "charset": "utf8"
+      },
+      "local_dw_blog":{
+        "host": "LOCAL_DW_MYSQL_Z_ETL_HOST",
+        "user": "LOCAL_DW_MYSQL_Z_ETL_USER",
+        "password": "LOCAL_DW_MYSQL_Z_ETL_PASSWORD",
+        "db": "blog",
+        "port": 3306,
+        "charset": "utf8"
+      }
+    }
+  },
+  "roboter": {
+    "token": "TEST_DINGDING_TOKEN",
+    "atMobiles": [
+      "188****8263"
+    ],
+    "isAtAll": false,
+    "roboter_type": "dingding",
+    "hook_keyword": "任务报警"
+  },
+  "log":{
+    "log_path": "../logs"
+  }
+}
