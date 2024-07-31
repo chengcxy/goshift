@@ -26,7 +26,7 @@ type Scheduler struct {
 func (s *Scheduler) getTasksinfo() error {
 	defer s.taskClient.Close()
 	var query string
-	if s.Cmdline.Cmd == "sync" {
+	if s.Cmdline.TaskId != "" {
 		query = fmt.Sprintf(BaseQueryTaskMeta, fmt.Sprintf(" id = %s ", s.Cmdline.TaskId))
 	} else {
 		query = fmt.Sprintf(BaseQueryTaskMeta, " 1 = 1")
@@ -102,10 +102,20 @@ func (s *Scheduler) worker(wid int, chs chan *meta.TaskMeta, results chan *plugi
 	}
 }
 
-func (s *Scheduler) Run() error {
-
-	//判断是否ctx Done
-	s.getTasksinfo()
+func (s *Scheduler) checkPlugin() error {
+	for _, tm := range s.Tasks {
+		_, err := plugin.GetPlugin(tm.FromDbType)
+		if err != nil {
+			return err
+		}
+		_, err = plugin.GetPlugin(tm.ToDbType)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func (s *Scheduler) runSync() error {
 	chs := make(chan *meta.TaskMeta, 0)
 	results := make(chan *plugin.TaskResult, 0)
 	dones := make(chan struct{}, s.Cmdline.Concurrency)
@@ -154,6 +164,22 @@ func (s *Scheduler) Run() error {
 	logger.Infof("total tasks:%d successed:%d,failed %d", len(s.Tasks), len(successed), len(faileds))
 	logger.Infof("task status success")
 	return nil
+}
+
+func (s *Scheduler) Run() error {
+	err := s.getTasksinfo()
+	if err != nil {
+		logger.Errorf("getTasksinfo err %+v", err)
+		return err
+	}
+	switch s.Cmdline.Cmd {
+	case "sync":
+		return s.runSync()
+	case "checkPlugin":
+		return s.checkPlugin()
+	default:
+		return fmt.Errorf("cmd:%s not support", s.Cmdline.Cmd)
+	}
 }
 
 func (s *Scheduler) run(tm *meta.TaskMeta) *plugin.TaskResult {
