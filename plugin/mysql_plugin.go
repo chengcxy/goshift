@@ -342,3 +342,7 @@ func (m MysqlPlugin) Close() {
 func NewMysqlPlugin() Plugin {
 	return MysqlPlugin{}
 }
+
+func init() {
+	RegisterPlugin("mysql", NewMysqlPlugin())
+}

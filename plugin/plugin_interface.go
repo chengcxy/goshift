@@ -44,7 +44,3 @@ func GetPlugin(pluginType string) (Plugin, error) {
 	}
 	return p, nil
 }
-
-func init() {
-	RegisterPlugin("mysql", NewMysqlPlugin())
-}

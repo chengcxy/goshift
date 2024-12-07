@@ -129,7 +129,7 @@ func (s *Scheduler) Run() error {
 
 	}()
 	for result := range results {
-		logger.Infof("taskid:%d result is %s", result.taskId, result)
+		logger.Infof("taskid:%d result is %v", result.taskId, result)
 	}
 	return nil
 }
