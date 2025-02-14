@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+
 type Scheduler struct {
 	config     *configor.Config
 	StartTime  time.Time
@@ -88,7 +89,7 @@ func NewWorkerPool(WorkerNum int) *WorkerPool {
 	}
 }
 
-func (s *Scheduler) worker(wid int, chs chan *meta.TaskMeta, results chan *Result, dones chan struct{}) {
+func (s *Scheduler) DoTask(wid int, chs chan *meta.TaskMeta, results chan *Result, dones chan struct{}) {
 	defer func() {
 		dones <- struct{}{}
 	}()
@@ -119,7 +120,7 @@ func (s *Scheduler) Run() error {
 	}()
 	//worker execute task
 	for i := 0; i < s.Cmdline.Concurrency; i++ {
-		go s.worker(i, chs, results, dones)
+		go s.DoTask(i, chs, results, dones)
 	}
 	go func() {
 		for i := 0; i < s.Cmdline.Concurrency; i++ {
@@ -134,6 +135,27 @@ func (s *Scheduler) Run() error {
 	return nil
 }
 
+//并发执行的
+func (s *Scheduler) worker(ctx context.Context, wid int, tasks chan *TaskParams, resultChan chan *Result, finishedChan chan int, dones chan *workerResult, tm *meta.TaskMeta, reader,writer Plugin) {
+	executed := 0
+	for p := range tasks {
+		task := &Task{
+			taskParam: p,
+			wid:       wid,
+			status:    0,
+		}
+		
+		resultChan <- reader.ExecuteTask(ctx, wid, task, finishedChan, tm, writer)
+		executed += 1
+	}
+	dones <- &workerResult{
+		wid:      wid,
+		executed: executed,
+	}
+}
+/*
+命令行传了一堆task_id 这里负责执行单个的task
+*/
 func (s *Scheduler) run(tm *meta.TaskMeta) error {
 	fmt.Printf("run taskMeta is %v \n ", tm)
 	readerPlugin, err := plugin.GetPlugin(tm.FromDbType)
@@ -145,7 +167,47 @@ func (s *Scheduler) run(tm *meta.TaskMeta) error {
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	Splits := reader.SplitTaskParams(ctx,tm)
+	totalTask := len(Splits)
+	tasks := make(chan *TaskParams, 0)
+	finishedChan := make(chan int, 0)
+	resultChan := make(chan *Result, 0)
+	dones := make(chan *workerResult, tm.WorkerNum)
+	go func() {
+		for index, param := range Splits {
+			param.index = index
+			tasks <- param
+		}
+		close(tasks)
+	}()
+	//打印进度协程
+	go func() {
+		finished := 0
+		for range finishedChan {
+			finished += 1
+			logger.Infof("[finished process is %d/%d,unfinished is %d/%d] \n", finished, totalTask, totalTask-finished, totalTask)
+		}
+	}()
+	for wid := 0; wid < tm.WorkerNum; wid++ {
+		go s.worker(ctx, wid, tasks, resultChan, finishedChan, dones, tm, writer)
+	}
+	go func() {
+		for wid := 0; wid < tm.WorkerNum; wid++ {
+			w := <-dones
+			logger.Infof("workerid %d executed:%d \n ", w.wid, w.executed)
+		}
+		close(finishedChan)
+		close(resultChan)
+	}()
+
+	totalSyncNum := int64(0)
+	for r := range resultChan {
+		logger.Infof("taskIndex:%d (start:%d:end:%d),wid:%d,syncNum:%d,status:%d \n", r.taskParam.index, r.taskParam.start, r.taskParam.end, r.wid, r.syncNum, r.status)
+		totalSyncNum += r.syncNum
+	}
+	logger.Infof("from mysql reader data totalSyncNum %d success", totalSyncNum)
+	
+	
 	writerPlugin, err := plugin.GetPlugin(tm.ToDbType)
 	if err != nil {
 		return err
@@ -155,7 +217,10 @@ func (s *Scheduler) run(tm *meta.TaskMeta) error {
 	if err != nil {
 		return err
 	}
-	defer writer.Close()
+	defer func(){
+		reader.Close()
+		writer.Close()
+	}()
 	return reader.Read(s.ctx, writer, tm)
 }
 

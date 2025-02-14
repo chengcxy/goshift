@@ -23,6 +23,28 @@ split下面的pk代表切分键,worker_num为协程数，read_batch为读取的�
 使用Go开发充分利用并发执行任务能力。
 
 
+运行模式，命令行参数可以执行单个主键id 也可以执行多个task_id 后续支持传where 表达式。
+当命令行解析参数后运行的tasks是个列表时，列表长度>=4 默认可以并行起4个task。注意这里的并行度4是针对task_id而言。
+如果task_id=1的任务里params参数设置了worker_num=20 则在执行task_id=1的数据同步任务时会继续起20个协程。
+为了减少对数据库的读写压力，减少并发资源占用,执行任务时最好看下表的统计大小，尽量不要让多个大表同时启动。
+run方法是负责执行单个task的具体执行方法。
+
+run方法逻辑:
+  1.1 根据from_db_type/to_db_type获取plugin的reader和writer.
+  1.2 解析数据库的数据的taskMeta,确定起多少个worker.
+  1.3 调用reader.SplitTaskParams方法获取一共需要执行多少任务
+  1.4 创建tasks channel,result channel
+  1.4 调度器的worker函数监听tasks channel，获取待执行的分片任务参数,reader负责根据分片任务参数读取数据，调用writer的write方法写到目标库,更新完成进度
+  1.5 run函数里同时监听结果通道,打印同步进度
+
+调度器主协程 监听每个task_id执行的状态,如果多个任务一个失败,则此次失败
+
+后续拓展：
+api接口管理能力,前端页面的异步执行查看进度功能,因函数封装了执行单个task_id的逻辑,后续可封装成Event,生成异步任务id,扔到消息队列,
+启动一个消费者监听消费队列更新任务状态，形成闭环
+
+
+
 ```
 
 

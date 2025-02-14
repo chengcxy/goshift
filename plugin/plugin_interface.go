@@ -13,7 +13,9 @@ import (
 type Plugin interface {
 	Connect(config *configor.Config, key string) (Plugin, error)
 	Read(ctx context.Context, writer Plugin, tm *meta.TaskMeta) error
+	SplitTaskParams(ctx context.Context,tm *meta.TaskMeta)[]*TaskParams
 	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+	ExecuteTask(ctx context.Context, wid int, taskParams *TaskParams, finishedChan chan int, tm *meta.TaskMeta, writer Plugin)
 	Close()
 }
 
