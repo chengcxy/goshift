@@ -66,10 +66,9 @@ func (s *Scheduler) Run() error {
 
 	err = reader.Connect(readerConfig.(map[string]interface{}))
 	if err != nil {
+		logger.Errorf("Reader connect failed ")
 		return err
 	}
-	logger.Infof("reader.client %v",reader)
-
 	writer, err := plugin.GetWriter(tm.ToDbType)
 	if err != nil {
 		logger.Errorf("Writer = %s not support", tm.ToDbType)
@@ -81,14 +80,11 @@ func (s *Scheduler) Run() error {
 		logger.Errorf("writerConfig = %s not in db_global json config file", writerConnKey)
 		return fmt.Errorf("writerConfig not in db_global json config file")
 	}
-
 	err = writer.Connect(writerConfig.(map[string]interface{}))
 	if err != nil {
+		logger.Errorf("writer connect failed ")
 		return err
 	}
-
-	
-
 	//所有的切分任务
 	JobParamsSplits := reader.SplitJobParams(s.ctx, tm)
 	totalJobNum := len(JobParamsSplits)
@@ -141,10 +137,10 @@ func NewScheduler(ctx context.Context, config, globalConfig *configor.Config, st
 		Cmdline:      Cmdline,
 		ctx:          ctx,
 	}
-
 	conf, _ := s.Config.Get("task_meta")
 	taskclient, err := NewMySQLTaskDBClient(conf.(map[string]interface{}))
 	if err != nil {
+		logger.Errorf("get taskDbclient error %v",err)
 		return nil, err
 	}
 	s.taskClient = taskclient

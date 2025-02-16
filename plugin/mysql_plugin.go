@@ -128,7 +128,7 @@ func (m *MysqlReader) SplitJobParams(ctx context.Context, tm *job.TaskMeta) (Spl
 	logger.Infof("MysqlReader.SplitJobParams.query %s", query)
 	logger.Infof("MysqlReader.client %v", m.client)
 	err := m.client.QueryRowContext(ctx, query).Scan(&minId, &maxId)
-	if err != nil {    
+	if err != nil {
 		logger.Errorf("get min max error %v", err)
 		return nil
 	}
@@ -198,7 +198,7 @@ func (m *MysqlReader) Connect(config map[string]interface{}) error {
 		db.SetMaxIdleConns(20)
 	}
 	m.client = db
-	logger.Infof("connect %s mysql success",config)
+	logger.Infof("connect %s mysql success", config)
 	return nil
 }
 
