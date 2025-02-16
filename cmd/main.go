@@ -45,7 +45,7 @@ func init() {
 		Dev:           dev,
 		NeedFileWrite: true,
 		LogPath:       LogPath.(string),
-		FilePrefix:    "data",
+		FilePrefix:    "goshift-",
 	})
 	logger.Infof("ConfigPath: %s ,Env: %s", ConfigPath, Env)
 	cmdLine = scheduler.NewCmdline(Cmd, TaskId, Mode)
