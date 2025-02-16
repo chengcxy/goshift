@@ -1,7 +1,11 @@
 package utils
 
 import (
+	"fmt"
 	"time"
+	"strings"
+	"strconv"
+	"errors"
 )
 
 const (
@@ -72,4 +76,31 @@ func MonthStartDayDate() time.Time {
 	year, month, _ := time.Now().Date()
 	monthStart := time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
 	return monthStart
+}
+
+
+
+func GetTimeValue(v string) (string, error) {
+	if strings.TrimSpace(v) == "$today" {
+		return GetDateFromToday(0), nil
+	} else if strings.Contains(v, "$today-") {
+		num := strings.TrimSpace(strings.Replace(v, "$today-", "", -1))
+		n, err := strconv.Atoi(num)
+		if err != nil {
+			return "", errors.New(fmt.Sprintf("getTimeValue $today- for int error:%v", err))
+		}
+		return GetDateFromToday(-n), nil
+	} else {
+		num := strings.TrimSpace(strings.Replace(v, "$today+", "", -1))
+		n, err := strconv.Atoi(num)
+		if err != nil {
+			return "", errors.New(fmt.Sprintf("getTimeValue $today+ for int error:%v", err))
+		}
+		return GetDateFromToday(n), nil
+	}
+}
+
+
+func GetDateFromToday(interval int) string {
+	return time.Now().AddDate(0, 0, interval).Format(DayFormatter)
 }

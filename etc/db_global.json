@@ -2,19 +2,28 @@
     "from":{
         "mysql":{
             "local_dw_test":{
-              "host": "LOCAL_DW_MYSQL_TEST_HOST ",
+              "host": "LOCAL_DW_MYSQL_TEST_HOST",
               "user": "LOCAL_DW_MYSQL_TEST_USER",
               "password": "LOCAL_DW_MYSQL_TEST_PASSWORD",
               "db": "test",
               "port": 3306,
               "charset": "utf8"
             }
+        },
+        "trino":{
+            "local_dw_ods":{
+                "host":"LOCAL_DW_TRINO_TEST_HOST",
+                "port":8080,
+                "user":"LOCAL_DW_TRINO_TEST_USER",
+                "catalog":"hive",
+                "schema":"dw"
+            }
         }
     },
     "to":{
       "mysql":{
         "local_dw_test2":{
-            "host": "LOCAL_DW_MYSQL_TEST2_HOST ",
+            "host": "LOCAL_DW_MYSQL_TEST2_HOST",
             "user": "LOCAL_DW_MYSQL_TEST2_USER",
             "password": "LOCAL_DW_MYSQL_TEST2_PASSWORD",
             "db": "test2",

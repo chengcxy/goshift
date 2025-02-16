@@ -74,6 +74,9 @@ func init() {
 	RegisterReader("mysql", func() Reader {
 		return NewMysqlReader()
 	})
+	RegisterReader("trino", func() Reader {
+		return NewTrinoReader()
+	})
 	RegisterWriter("mysql", func() Writer {
 		return NewMysqlWriter()
 	})

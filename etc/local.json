@@ -1,7 +1,7 @@
 {
     "task_meta": {
         "type":"mysql",
-        "host": "LOCAL_DW_MYSQL_Z_ETL_HOST ",
+        "host": "LOCAL_DW_MYSQL_Z_ETL_HOST",
         "user": "LOCAL_DW_MYSQL_Z_ETL_USER",
         "password": "LOCAL_DW_MYSQL_Z_ETL_PASSWORD",
         "db": "z_etl",

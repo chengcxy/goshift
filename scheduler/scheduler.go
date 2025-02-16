@@ -66,7 +66,7 @@ func (s *Scheduler) Run() error {
 
 	err = reader.Connect(readerConfig.(map[string]interface{}))
 	if err != nil {
-		logger.Errorf("Reader connect failed ")
+		logger.Errorf("Reader connect failed error:%v",err)
 		return err
 	}
 	writer, err := plugin.GetWriter(tm.ToDbType)
@@ -82,7 +82,7 @@ func (s *Scheduler) Run() error {
 	}
 	err = writer.Connect(writerConfig.(map[string]interface{}))
 	if err != nil {
-		logger.Errorf("writer connect failed ")
+		logger.Errorf("writer connect failed:%v",err)
 		return err
 	}
 	//所有的切分任务
