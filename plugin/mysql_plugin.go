@@ -19,7 +19,7 @@ where %s>? and %s<=?
 `
 
 var BaseQueryMinMax = `
-select min(%s) as minId,max(%s) as maxId
+select min(%s)-1 as minId,max(%s) as maxId
 from %s.%s
 `
 var BaseInsertSql = `
@@ -42,11 +42,11 @@ type MysqlReader struct {
 	client *sql.DB
 }
 
-func (m MysqlReader) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (m *MysqlReader) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	return m.client.ExecContext(ctx, query, args...)
 }
 
-func (m MysqlReader) Read(ctx context.Context, wid int, j *job.Job, finishedChan chan int, tm *job.TaskMeta, writer Writer) *job.JobResult {
+func (m *MysqlReader) Read(ctx context.Context, wid int, j *job.Job, finishedChan chan int, tm *job.TaskMeta, writer Writer) *job.JobResult {
 	defer func() {
 		finishedChan <- 1
 	}()
@@ -66,7 +66,7 @@ func (m MysqlReader) Read(ctx context.Context, wid int, j *job.Job, finishedChan
 	return writer.Write(ctx, wid, j, datas, tm)
 }
 
-func (m MysqlReader) Write(ctx context.Context, wid int, j *job.Job, datas []map[string]interface{}, tm *job.TaskMeta) *job.JobResult {
+func (m *MysqlReader) Write(ctx context.Context, wid int, j *job.Job, datas []map[string]interface{}, tm *job.TaskMeta) *job.JobResult {
 	db := tm.ToDb
 	table := tm.ToTable
 	writeBatch := tm.WriteBatch // 每次批量写入的大小
@@ -122,22 +122,27 @@ func (m MysqlReader) Write(ctx context.Context, wid int, j *job.Job, datas []map
 
 }
 
-func (m MysqlReader) SplitJobParams(ctx context.Context, tm *job.TaskMeta) (Splits []*job.JobParam) {
-	var minId, maxId int64
+func (m *MysqlReader) SplitJobParams(ctx context.Context, tm *job.TaskMeta) (Splits []*job.JobParam) {
+	var minId,maxId int64
 	query := fmt.Sprintf(BaseQueryMinMax, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable)
-	m.QueryContext(ctx, query, minId)
+	logger.Infof("MysqlReader.SplitJobParams.query %s", query)
+	logger.Infof("MysqlReader.client %v", m.client)
 	err := m.client.QueryRowContext(ctx, query).Scan(&minId, &maxId)
-	if err != nil {
+	if err != nil {    
 		logger.Errorf("get min max error %v", err)
 		return nil
 	}
-	//全量模式 读src表的最小最大id 增量模式 最小取min(src,dest),最大取max(src_dest)
-	if tm.Mode == "init" {
-		minId = minId - 1
-	} else {
-		//暂时先不考虑增量
-		minId = minId - 1
-	}
+	logger.Infof("minId,maxId ->(%d,%d]", minId, maxId)
+	// //全量模式 读src表的最小最大id 增量模式 最小取min(src,dest),最大取max(src_dest)
+	// if tm.Mode == "init" {
+	// 	minId = int64(_minId) - 1
+	// 	maxId = int64(_maxId)
+	// } else {
+	// 	//暂时先不考虑增量
+	// 	minId = int64(_minId) - 1
+	// 	maxId = int64(_maxId)
+	// }
+
 	start := minId
 	end := maxId
 	logger.Infof("minid:%d,maxId:%d", minId, maxId)
@@ -162,7 +167,7 @@ func (m MysqlReader) SplitJobParams(ctx context.Context, tm *job.TaskMeta) (Spli
 	return
 }
 
-func (m MysqlReader) Connect(config map[string]interface{}) error {
+func (m *MysqlReader) Connect(config map[string]interface{}) error {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s",
 		config["user"].(string),
 		config["password"].(string),
@@ -193,10 +198,11 @@ func (m MysqlReader) Connect(config map[string]interface{}) error {
 		db.SetMaxIdleConns(20)
 	}
 	m.client = db
+	logger.Infof("connect %s mysql success",config)
 	return nil
 }
 
-func (m MysqlReader) QueryContext(ctx context.Context, query string, args ...interface{}) ([]map[string]interface{}, []string, error) {
+func (m *MysqlReader) QueryContext(ctx context.Context, query string, args ...interface{}) ([]map[string]interface{}, []string, error) {
 	stam, err := m.client.PrepareContext(ctx, query)
 	if err != nil {
 		return nil, nil, err
@@ -224,13 +230,12 @@ func (m MysqlReader) QueryContext(ctx context.Context, query string, args ...int
 		for i, col := range values {
 			record[strings.ToLower(columns[i])] = col
 		}
-		logger.Infof("record is %+v", record)
 		results = append(results, record)
 	}
 	return results, columns, nil
 }
 
-func (m MysqlReader) ExecuteContext(ctx context.Context, sql string, args ...interface{}) (int64, error) {
+func (m *MysqlReader) ExecuteContext(ctx context.Context, sql string, args ...interface{}) (int64, error) {
 	stam, err := m.client.PrepareContext(ctx, sql)
 	defer stam.Close()
 	if err != nil {
@@ -249,7 +254,7 @@ func (m MysqlReader) ExecuteContext(ctx context.Context, sql string, args ...int
 	return affNum, err
 }
 
-func (m MysqlReader) Close() {
+func (m *MysqlReader) Close() {
 	m.client.Close()
 }
 

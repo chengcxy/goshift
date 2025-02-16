@@ -68,6 +68,7 @@ func (s *Scheduler) Run() error {
 	if err != nil {
 		return err
 	}
+	logger.Infof("reader.client %v",reader)
 
 	writer, err := plugin.GetWriter(tm.ToDbType)
 	if err != nil {
@@ -86,10 +87,7 @@ func (s *Scheduler) Run() error {
 		return err
 	}
 
-	defer func() {
-		reader.Close()
-		writer.Close()
-	}()
+	
 
 	//所有的切分任务
 	JobParamsSplits := reader.SplitJobParams(s.ctx, tm)
