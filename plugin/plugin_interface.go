@@ -2,47 +2,79 @@ package plugin
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/chengcxy/goshift/configor"
-	"github.com/chengcxy/goshift/meta"
+	"github.com/chengcxy/goshift/job"
 	"sync"
 )
 
-type Plugin interface {
-	Connect(config *configor.Config, key string) (Plugin, error)
-	Read(ctx context.Context, writer Plugin, tm *meta.TaskMeta) error
-	SplitTaskParams(ctx context.Context,tm *meta.TaskMeta)[]*TaskParams
-	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
-	ExecuteTask(ctx context.Context, wid int, taskParams *TaskParams, finishedChan chan int, tm *meta.TaskMeta, writer Plugin)
+type Reader interface {
+	Connect(config map[string]interface{}) error
+	SplitJobParams(ctx context.Context, tm *job.TaskMeta) []*job.JobParam
+	Read(ctx context.Context, wid int, job *job.Job, finishedChan chan int, tm *job.TaskMeta, writer Writer) *job.JobResult
 	Close()
 }
 
-var Plugins = make(map[string]Plugin, 0)
+type Writer interface {
+	Connect(config map[string]interface{}) error
+	Write(ctx context.Context, wod int, job *job.Job, datas []map[string]interface{}, tm *job.TaskMeta) *job.JobResult
+	Close()
+}
+
+var Readers = make(map[string]func() Reader, 0)
+var Writers = make(map[string]func() Writer, 0)
 
 var lock sync.Mutex
 
-func RegisterPlugin(pluginType string, p Plugin) error {
+func RegisterReader(readerType string, factory func() Reader) error {
 	lock.Lock()
 	defer lock.Unlock()
-	if _, ok := Plugins[pluginType]; ok {
-		errMsg := fmt.Sprintf("%s plugin already Register", pluginType)
+	if _, ok := Readers[readerType]; ok {
+		errMsg := fmt.Sprintf("%s reader already Register", readerType)
 		return errors.New(errMsg)
 	}
-	Plugins[pluginType] = p
+	Readers[readerType] = factory
 	return nil
 }
 
-func GetPlugin(pluginType string) (Plugin, error) {
+func GetReader(readerType string) (Reader, error) {
 	lock.Lock()
 	defer lock.Unlock()
-	var p Plugin
-	if v, ok := Plugins[pluginType]; !ok {
-		errMsg := fmt.Sprintf("%s plugin not  Register please user func of init to RegisterPlugin", pluginType)
+	factory, ok := Readers[readerType]
+	if !ok {
+		errMsg := fmt.Sprintf("%s plugin not  Register to Readers please user func of init to RegisterPlugin", readerType)
 		return nil, errors.New(errMsg)
-	} else {
-		p = v
 	}
-	return p, nil
+	return factory(), nil
+}
+
+func RegisterWriter(writerType string, factory func() Writer) error {
+	lock.Lock()
+	defer lock.Unlock()
+	if _, ok := Writers[writerType]; ok {
+		errMsg := fmt.Sprintf("%s Writer already Register", writerType)
+		return errors.New(errMsg)
+	}
+	Writers[writerType] = factory
+	return nil
+}
+
+func GetWriter(writerType string) (Writer, error) {
+	lock.Lock()
+	defer lock.Unlock()
+	factory, ok := Writers[writerType]
+	if !ok {
+		errMsg := fmt.Sprintf("%s plugin not  Register to Writers please user func of init to RegisterPlugin", writerType)
+		return nil, errors.New(errMsg)
+	}
+	return factory(), nil
+}
+
+func init() {
+	RegisterReader("mysql", func() Reader {
+		return NewMysqlReader()
+	})
+	RegisterWriter("mysql", func() Writer {
+		return NewMysqlWriter()
+	})
 }

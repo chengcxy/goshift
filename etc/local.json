@@ -1,60 +1,12 @@
 {
-  "task_meta_mysql": {
+  "task_meta": {
+      "type":"mysql",
       "host": "LOCAL_DW_MYSQL_Z_ETL_HOST",
       "user": "LOCAL_DW_MYSQL_Z_ETL_USER",
       "password": "LOCAL_DW_MYSQL_Z_ETL_PASSWORD",
       "db": "z_etl",
       "port": 3306,
       "charset": "utf8"
-  },
-  "from":{
-      "mysql":{
-          "local_dw_test":{
-            "host": "LOCAL_DW_MYSQL_TEST_HOST",
-            "user": "LOCAL_DW_MYSQL_TEST_USER",
-            "password": "LOCAL_DW_MYSQL_TEST_PASSWORD",
-            "db": "test",
-            "port": 3306,
-            "charset": "utf8"
-          },
-          "local_dw_blog":{
-            "host": "LOCAL_DW_MYSQL_Z_ETL_HOST",
-            "user": "LOCAL_DW_MYSQL_Z_ETL_USER",
-            "password": "LOCAL_DW_MYSQL_Z_ETL_PASSWORD",
-            "db": "blog",
-            "port": 3306,
-            "charset": "utf8"
-          }
-      },
-      "trino":{
-        "local_dw_dw":{
-          "host":"106.14.56.47",
-          "port":8082,
-          "user":"root",
-          "catalog":"hive",
-          "schema":"dw"
-        }
-      }
-  },
-  "to":{
-    "mysql":{
-      "local_dw_test":{
-        "host": "LOCAL_DW_MYSQL_TEST_HOST",
-        "user": "LOCAL_DW_MYSQL_TEST_USER",
-        "password": "LOCAL_DW_MYSQL_TEST_PASSWORD",
-        "db": "test",
-        "port": 3306,
-        "charset": "utf8"
-      },
-      "local_dw_blog":{
-        "host": "LOCAL_DW_MYSQL_Z_ETL_HOST",
-        "user": "LOCAL_DW_MYSQL_Z_ETL_USER",
-        "password": "LOCAL_DW_MYSQL_Z_ETL_PASSWORD",
-        "db": "blog",
-        "port": 3306,
-        "charset": "utf8"
-      }
-    }
   },
   "roboter": {
     "token": "TEST_DINGDING_TOKEN",

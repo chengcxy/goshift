@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/chengcxy/goshift/configor"
-	"github.com/chengcxy/goshift/logger"
-	"github.com/chengcxy/goshift/meta"
-	_ "github.com/go-sql-driver/mysql"
 	"strings"
+
+	"github.com/chengcxy/goshift/job"
+	"github.com/chengcxy/goshift/logger"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var BaseQuery = `
@@ -38,123 +38,98 @@ order by %s desc
 limit 1
 `
 
-type MysqlPlugin struct {
-	config *configor.Config
+type MysqlReader struct {
 	client *sql.DB
 }
 
-type Params struct {
-}
-type TaskParams struct {
-	index int
-	start int64
-	end   int64
-}
-type Task struct {
-	taskParam *TaskParams
-	wid       int
-	status    int
-}
-
-type Result struct {
-	taskParam *TaskParams
-	wid       int
-	status    int
-	syncNum   int64
-}
-
-type workerResult struct {
-	wid      int
-	executed int
-}
-
-func (m MysqlPlugin) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (m MysqlReader) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	return m.client.ExecContext(ctx, query, args...)
 }
 
-func (m MysqlPlugin) ExecuteTask(ctx context.Context, wid int, task *Task, finishedChan chan int, tm *meta.TaskMeta, writer Plugin) *Result {
-	start, end := task.taskParam.start, task.taskParam.end
+func (m MysqlReader) Read(ctx context.Context, wid int, j *job.Job, finishedChan chan int, tm *job.TaskMeta, writer Writer) *job.JobResult {
+	defer func() {
+		finishedChan <- 1
+	}()
+	start, end := j.Param.Start, j.Param.End
 	logger.Infof("ExecuteTask start is %d,end is %d", start, end)
-	q := fmt.Sprintf(BaseQuery, tm.FromDb, tm.FromTable, tm.SrcPk, tm.SrcPk)
-	rows, _ := m.client.Query(q, start, end)
-	defer rows.Close()
-	columns, _ := rows.Columns()
-	insertKeys := make([]string, len(columns))
-	qs := make([]string, 0)
-	for index, col := range columns {
-		columns[index] = strings.ToLower(col)
-		insertKeys[index] = fmt.Sprintf("`%s`", strings.ToLower(col))
-		qs = append(qs, "?")
+	query := fmt.Sprintf(BaseQuery, tm.FromDb, tm.FromTable, tm.SrcPk, tm.SrcPk)
+
+	datas, _, err := m.QueryContext(ctx, query, start, end)
+	if err != nil {
+		return &job.JobResult{
+			Param:  j.Param,
+			Wid:    wid,
+			Status: job.StatusFailed,
+			Err:    err,
+		}
 	}
-	values := make([]interface{}, 0)
-	scanArgs := make([]interface{}, len(columns))
-	rowValues := make([]interface{}, len(columns))
-	for i := range rowValues {
-		scanArgs[i] = &rowValues[i]
+	return writer.Write(ctx, wid, j, datas, tm)
+}
+
+func (m MysqlReader) Write(ctx context.Context, wid int, j *job.Job, datas []map[string]interface{}, tm *job.TaskMeta) *job.JobResult {
+	db := tm.ToDb
+	table := tm.ToTable
+	writeBatch := tm.WriteBatch // 每次批量写入的大小
+	item := datas[0]
+	columns := make([]string, 0)
+	for k := range item {
+		columns = append(columns, k)
 	}
-	fmts := make([]string, 0)
 	syncNum := int64(0)
-	for rows.Next() {
-		rows.Scan(scanArgs...)
-		fmts = append(fmts, fmt.Sprintf("(%s)", strings.Join(qs, ",")))
-		values = append(values, rowValues...)
-		if len(values) == tm.WriteBatch*len(columns) {
-			insertSql := fmt.Sprintf(BaseInsertSql, tm.ToDb, tm.ToTable, strings.Join(insertKeys, ","), strings.Join(fmts, ","))
-			r, err := writer.ExecContext(ctx, insertSql, values...)
-			if err != nil {
-				logger.Errorf("insertsql:%s error:%v", insertSql, err)
+	columnNames := strings.Join(columns, ", ")
+	for len(datas) > 0 {
+		end := writeBatch
+		if end > len(datas) {
+			end = len(datas)
+		}
+		batch := datas[:end]
+		placeholders := make([]string, len(batch))
+		values := make([]interface{}, 0)
+		for j, row := range batch {
+			valuePlaceholders := make([]string, len(columns))
+			for k, col := range columns {
+				valuePlaceholders[k] = "?"
+				values = append(values, row[col])
 			}
-			num, _ := r.RowsAffected()
-			syncNum += num
-			values = values[:0]
-			fmts = fmts[:0]
+			placeholders[j] = fmt.Sprintf("(%s)", strings.Join(valuePlaceholders, ", "))
 		}
-
-	}
-	if len(values) > 0 {
-		insertSql := fmt.Sprintf(BaseInsertSql, tm.ToDb, tm.ToTable, strings.Join(insertKeys, ","), strings.Join(fmts, ","))
-		r, err := writer.ExecContext(ctx, insertSql, values...)
+		query := fmt.Sprintf("INSERT INTO %s.%s (%s) VALUES %s", db, table, columnNames, strings.Join(placeholders, ", "))
+		_, err := m.client.ExecContext(ctx, query, values...)
 		if err != nil {
-			logger.Errorf("insertsql:%s error:%v", insertSql, err)
+			logger.Errorf("Failed to insert batch: %v", err)
+			result := &job.JobResult{
+				Param:  j.Param,
+				Wid:    wid,
+				Status: job.StatusFailed,
+				Err:    err,
+			}
+			return result
 		}
-		num, _ := r.RowsAffected()
-		syncNum += num
-		values = values[:0]
-		fmts = fmts[:0]
-	}
 
-	finishedChan <- 1
-	return &Result{
-		taskParam: task.taskParam,
-		wid:       wid,
-		status:    1,
-		syncNum:   syncNum,
+		// 输出日志，成功插入
+		logger.Infof("Successfully inserted %d records into table %s", len(batch), table)
+		// 将处理过的部分数据从 datas 中切割出去，释放内存
+		datas = datas[end:]
+		syncNum += int64(len(batch))
+	}
+	return &job.JobResult{
+		Param:   j.Param,
+		Wid:     wid,
+		Status:  job.StatusSuccess,
+		Err:     nil,
+		SyncNum: syncNum,
 	}
 
 }
-func (m MysqlPlugin) worker(ctx context.Context, wid int, tasks chan *TaskParams, resultChan chan *Result, finishedChan chan int, dones chan *workerResult, tm *meta.TaskMeta, writer Plugin) {
-	executed := 0
-	for p := range tasks {
-		task := &Task{
-			taskParam: p,
-			wid:       wid,
-			status:    0,
-		}
-		resultChan <- m.ExecuteTask(ctx, wid, task, finishedChan, tm, writer)
-		executed += 1
-	}
-	dones <- &workerResult{
-		wid:      wid,
-		executed: executed,
-	}
-}
-func (m MysqlPlugin) GetTotalSplits(ctx context.Context, tm *meta.TaskMeta) (Splits []*TaskParams, err error) {
+
+func (m MysqlReader) SplitJobParams(ctx context.Context, tm *job.TaskMeta) (Splits []*job.JobParam) {
 	var minId, maxId int64
-	q := fmt.Sprintf(BaseQueryMinMax, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable)
-	err = m.client.QueryRowContext(ctx, q).Scan(&minId, &maxId)
+	query := fmt.Sprintf(BaseQueryMinMax, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable)
+	m.QueryContext(ctx, query, minId)
+	err := m.client.QueryRowContext(ctx, query).Scan(&minId, &maxId)
 	if err != nil {
 		logger.Errorf("get min max error %v", err)
-		return
+		return nil
 	}
 	//全量模式 读src表的最小最大id 增量模式 最小取min(src,dest),最大取max(src_dest)
 	if tm.Mode == "init" {
@@ -181,53 +156,47 @@ func (m MysqlPlugin) GetTotalSplits(ctx context.Context, tm *meta.TaskMeta) (Spl
 		if nextId >= end {
 			nextId = end
 		}
-		Splits = append(Splits, &TaskParams{start: start, end: nextId})
+		Splits = append(Splits, &job.JobParam{Start: start, End: nextId})
 		start = nextId
 	}
 	return
 }
 
-func (m MysqlPlugin) Connect(config *configor.Config, key string) (Plugin, error) {
-	m.config = config
-	conf, ok := config.Get(key)
-	if !ok {
-		return nil, errors.New(fmt.Sprintf("key:%s not in json_file", key))
-	}
-	c := conf.(map[string]interface{})
-	Uri := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s",
-		c["user"].(string),
-		c["password"].(string),
-		c["host"].(string),
-		int(c["port"].(float64)),
-		c["db"].(string),
-		c["charset"].(string),
+func (m MysqlReader) Connect(config map[string]interface{}) error {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s",
+		config["user"].(string),
+		config["password"].(string),
+		config["host"].(string),
+		int(config["port"].(float64)),
+		config["db"].(string),
+		config["charset"].(string),
 	)
-	db, err := sql.Open("mysql", Uri)
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("open mysql error:%v", err))
+		return errors.New(fmt.Sprintf("open mysql error:%v", err))
 	}
 	err = db.Ping()
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("ping mysql error:%v", err))
+		return errors.New(fmt.Sprintf("ping mysql error:%v", err))
 	}
 	db.SetConnMaxLifetime(0)
-	MaxOpenConns, ok := c["MaxOpenConns"]
+	MaxOpenConns, ok := config["MaxOpenConns"]
 	if ok {
 		db.SetMaxOpenConns(int(MaxOpenConns.(float64)))
 	} else {
 		db.SetMaxOpenConns(20)
 	}
-	MaxIdleConns, ok := c["MaxIdleConns"]
+	MaxIdleConns, ok := config["MaxIdleConns"]
 	if ok {
 		db.SetMaxIdleConns(int(MaxIdleConns.(float64)))
 	} else {
 		db.SetMaxIdleConns(20)
 	}
 	m.client = db
-	return m, nil
+	return nil
 }
 
-func (m MysqlPlugin) QueryContext(ctx context.Context, query string, args ...interface{}) ([]map[string]interface{}, []string, error) {
+func (m MysqlReader) QueryContext(ctx context.Context, query string, args ...interface{}) ([]map[string]interface{}, []string, error) {
 	stam, err := m.client.PrepareContext(ctx, query)
 	if err != nil {
 		return nil, nil, err
@@ -261,7 +230,7 @@ func (m MysqlPlugin) QueryContext(ctx context.Context, query string, args ...int
 	return results, columns, nil
 }
 
-func (m MysqlPlugin) ExecuteContext(ctx context.Context, sql string, args ...interface{}) (int64, error) {
+func (m MysqlReader) ExecuteContext(ctx context.Context, sql string, args ...interface{}) (int64, error) {
 	stam, err := m.client.PrepareContext(ctx, sql)
 	defer stam.Close()
 	if err != nil {
@@ -280,69 +249,14 @@ func (m MysqlPlugin) ExecuteContext(ctx context.Context, sql string, args ...int
 	return affNum, err
 }
 
-func (m MysqlPlugin) Read(ctx context.Context, writer Plugin, tm *meta.TaskMeta) error {
-	if tm.Mode == "init" {
-		return m.init(ctx, writer, tm)
-	} else {
-		logger.Errorf("not support != init mode")
-		return errors.New("not support != init mode")
-	}
-}
-
-func (m MysqlPlugin) init(ctx context.Context, writer Plugin, tm *meta.TaskMeta) error {
-	Splits, err := m.GetTotalSplits(ctx, tm)
-	if err != nil {
-		logger.Errorf("split min max error:%v", err)
-		return err
-	}
-	totalTask := len(Splits)
-	tasks := make(chan *TaskParams, 0)
-	finishedChan := make(chan int, 0)
-	resultChan := make(chan *Result, 0)
-	dones := make(chan *workerResult, tm.WorkerNum)
-	go func() {
-		for index, param := range Splits {
-			param.index = index
-			tasks <- param
-		}
-		close(tasks)
-	}()
-	//打印进度协程
-	go func() {
-		finished := 0
-		for range finishedChan {
-			finished += 1
-			logger.Infof("[finished process is %d/%d,unfinished is %d/%d] \n", finished, totalTask, totalTask-finished, totalTask)
-		}
-	}()
-	for wid := 0; wid < tm.WorkerNum; wid++ {
-		go m.worker(ctx, wid, tasks, resultChan, finishedChan, dones, tm, writer)
-	}
-	go func() {
-		for wid := 0; wid < tm.WorkerNum; wid++ {
-			w := <-dones
-			logger.Infof("workerid %d executed:%d \n ", w.wid, w.executed)
-		}
-		close(finishedChan)
-		close(resultChan)
-	}()
-
-	totalSyncNum := int64(0)
-	for r := range resultChan {
-		logger.Infof("taskIndex:%d (start:%d:end:%d),wid:%d,syncNum:%d,status:%d \n", r.taskParam.index, r.taskParam.start, r.taskParam.end, r.wid, r.syncNum, r.status)
-		totalSyncNum += r.syncNum
-	}
-	logger.Infof("from mysql reader data totalSyncNum %d success", totalSyncNum)
-	return nil
-}
-func (m MysqlPlugin) Close() {
+func (m MysqlReader) Close() {
 	m.client.Close()
 }
 
-func NewMysqlPlugin() Plugin {
-	return MysqlPlugin{}
+func NewMysqlReader() Reader {
+	return &MysqlReader{}
 }
 
-func init() {
-	RegisterPlugin("mysql", NewMysqlPlugin())
+func NewMysqlWriter() Writer {
+	return &MysqlReader{}
 }

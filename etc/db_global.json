@@ -1,0 +1,42 @@
+{
+    "from":{
+        "mysql":{
+            "local_dw_test":{
+              "host": "LOCAL_DW_MYSQL_TEST_HOST",
+              "user": "LOCAL_DW_MYSQL_TEST_USER",
+              "password": "LOCAL_DW_MYSQL_TEST_PASSWORD",
+              "db": "test",
+              "port": 3306,
+              "charset": "utf8"
+            },
+            "local_dw_blog":{
+              "host": "LOCAL_DW_MYSQL_Z_ETL_HOST",
+              "user": "LOCAL_DW_MYSQL_Z_ETL_USER",
+              "password": "LOCAL_DW_MYSQL_Z_ETL_PASSWORD",
+              "db": "blog",
+              "port": 3306,
+              "charset": "utf8"
+            }
+        }
+    },
+    "to":{
+      "mysql":{
+        "local_dw_test":{
+          "host": "LOCAL_DW_MYSQL_TEST_HOST",
+          "user": "LOCAL_DW_MYSQL_TEST_USER",
+          "password": "LOCAL_DW_MYSQL_TEST_PASSWORD",
+          "db": "test",
+          "port": 3306,
+          "charset": "utf8"
+        },
+        "local_dw_blog":{
+          "host": "LOCAL_DW_MYSQL_Z_ETL_HOST",
+          "user": "LOCAL_DW_MYSQL_Z_ETL_USER",
+          "password": "LOCAL_DW_MYSQL_Z_ETL_PASSWORD",
+          "db": "blog",
+          "port": 3306,
+          "charset": "utf8"
+        }
+      }
+    }
+  }

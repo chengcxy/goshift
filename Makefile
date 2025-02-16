@@ -9,4 +9,3 @@ fmt:
 	gofmt -l -w plugin
 	gofmt -l -w scheduler
 	gofmt -l -w utils
-	gofmt -l -w utils

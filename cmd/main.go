@@ -19,9 +19,8 @@ var UsedEnv bool
 var TaskId string
 var Cmd string
 var Mode string
-var ToApp string
-var Concurrency int
 var config *configor.Config
+var globalConfig *configor.Config
 var cmdLine *scheduler.Cmdline
 
 func init() {
@@ -31,10 +30,9 @@ func init() {
 	flag.StringVar(&Cmd, "cmd", "sync", "命令")
 	flag.StringVar(&Mode, "mode", "init", "模式")
 	flag.StringVar(&TaskId, "id", "1", "任务id")
-	flag.StringVar(&ToApp, "to_app", "test_dw", "往什么系统同步")
-	flag.IntVar(&Concurrency, "concurrency", 4, "并发任务数")
 	flag.Parse()
 	config = configor.NewConfig(ConfigPath, Env, UsedEnv)
+	globalConfig = configor.NewConfig(ConfigPath, "db_global", UsedEnv)
 	var dev bool
 	if Env != "prod" {
 		dev = true
@@ -50,7 +48,7 @@ func init() {
 		FilePrefix:    "data",
 	})
 	logger.Infof("ConfigPath: %s ,Env: %s", ConfigPath, Env)
-	cmdLine = scheduler.NewCmdline(Cmd, TaskId, Mode, ToApp, Concurrency)
+	cmdLine = scheduler.NewCmdline(Cmd, TaskId, Mode)
 	logger.Infof("cmdLine %+v", cmdLine)
 }
 
@@ -64,7 +62,7 @@ func main() {
 		<-signalChan
 		cancel()
 	}()
-	s, err := scheduler.NewScheduler(config, StartTime, cmdLine, ctx)
+	s, err := scheduler.NewScheduler(ctx, config, globalConfig, StartTime, cmdLine)
 	if err != nil {
 		logger.Errorf("init NewScheduler error %+v", err)
 		os.Exit(0)
