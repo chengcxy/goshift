@@ -117,3 +117,10 @@ Usage of ./goshift:
   -mode string
     	模式 (default "init")
 ```
+
+
+## 六.demo
+
+```
+./goshift -c ../etc/ -e local -id 5
+```
