@@ -1,9 +1,9 @@
 {
   "task_meta": {
       "type":"mysql",
-      "host": "LOCAL_DW_MYSQL_Z_ETL_HOST",
-      "user": "LOCAL_DW_MYSQL_Z_ETL_USER",
-      "password": "LOCAL_DW_MYSQL_Z_ETL_PASSWORD",
+      "host": "localhost",
+      "user": "root",
+      "password": "admin2016",
       "db": "z_etl",
       "port": 3306,
       "charset": "utf8"
