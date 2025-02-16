@@ -1,6 +1,6 @@
 {
   "task_meta": {
-      "type":"mysql",
+    "type":"mysql",
       "host": "localhost",
       "user": "root",
       "password": "admin2016",
