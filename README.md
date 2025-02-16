@@ -36,13 +36,9 @@ Run方法逻辑:
   1.6 调度器的worker函数监听tasks channel，获取待执行的分片任务参数,reader负责根据分片任务参数读取数据，调用writer的write方法写到目标库,更新完成进度
   1.7 监听结果通道,打印同步进度
 
-
 后续拓展：
 api接口管理能力,前端页面的异步执行查看进度功能,因函数封装了执行单个task_id的逻辑,后续可封装成Event,生成异步任务id,扔到消息队列,
 启动一个消费者监听消费队列更新任务状态，形成闭环
-
-
-
 ```
 
 
@@ -70,11 +66,9 @@ CREATE TABLE `task_def_sync_manager` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='同步任务管理';、
 
-
 INSERT INTO `task_def_sync_manager` (`id`, `from_app`, `from_db_type`, `from_db`, `from_table`, `to_app`, `to_db_type`, `to_db`, `to_table`, `params`, `online_status`, `task_desc`, `task_status`, `owner`, `create_time`, `update_time`)
 VALUES
 	(5, 'local_dw', 'mysql', 'blog', 'qcc_change_history', 'local_dw', 'mysql', 'blog', 'qcc_change_history2', '{\n	\"pk\": {\n		\"src\": \"id\",\n		\"dest\": \"id\"\n	},\n	\"diff_column\": {\n		\"src\": \"update_time\",\n		\"dest\": \"update_time\"\n	},\n	\"worker_num\": 20,\n	\"read_batch\": 5000,\n	\"write_batch\": 500\n}', 1, '增量导入', '1', '18811788263', '2021-03-30 16:13:34', '2024-07-08 11:00:11');
-
 ```
 
 
