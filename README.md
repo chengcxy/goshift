@@ -2,7 +2,7 @@
 <strong>
 <samp>
 
-[English](https://github.com/chengcxy/goshift/blob/master/README.md) · [简体中文](https://github.com/github.com/chengcxy/goshift/master/README-CN.md)
+[English](https://github.com/chengcxy/goshift/blob/master/README.md) · [简体中文](https://github.com/chengcxy/goshift/blob/master/README-CN.md)
 
 </samp>
 </strong>
