@@ -1,3 +1,14 @@
+<div align="center">
+<strong>
+<samp>
+
+[English](https://github.com/chengcxy/goshift/blob/master/README.md) · [简体中文](https://github.com/github.com/chengcxy/goshift/master/README-CN.md)
+
+</samp>
+</strong>
+</div>
+
+
 # goshift Data Syncer for Other Databases
 
 ## 1. Design Concept
