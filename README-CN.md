@@ -122,46 +122,42 @@ Usage of ./goshift:
 ## 七. Log 
 
 ```
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:109	[finished process is 195/200,unfinished is 5/200]
+...
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:125	taskIndex:193 (start:965010:end:970010),wid:1,syncNum:5000,status:4
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:127	taskIndex:197 (start:985010:end:990010),wid:6,syncNum:5000,status:4
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:117	workerid 1 executedJobs:10
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:119	workerid 6 executedJobs:10
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:107	[finished process is 196/200,unfinished is 4/200]
 
-2025-02-17T22:52:40+08:00	INFO	plugin/mysql_plugin.go:110	Successfully inserted 500 records into table test2
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:119	workerid 8 executedJobs:10
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:125	taskIndex:189 (start:945010:end:950010),wid:10,syncNum:5000,status:4
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:109	[finished process is 196/200,unfinished is 4/200]
+2025-02-18T06:22:40+08:00	INFO	plugin/mysql_plugin.go:110	Successfully inserted 490 records into table test2
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:117	workerid 10 executedJobs:10
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:127	taskIndex:196 (start:980010:end:985010),wid:8,syncNum:5000,status:4
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:107	[finished process is 197/200,unfinished is 3/200]
 
-2025-02-17T22:52:40+08:00	INFO	plugin/mysql_plugin.go:110	Successfully inserted 490 records into table test2
-2025-02-17T22:52:40+08:00	INFO	plugin/mysql_plugin.go:110	Successfully inserted 500 records into table test2
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:119	workerid 7 executedJobs:10
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:125	taskIndex:196 (start:980010:end:985010),wid:13,syncNum:5000,status:4
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:109	[finished process is 197/200,unfinished is 3/200]
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:117	workerid 13 executedJobs:10
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:127	taskIndex:199 (start:995010:end:1000000),wid:7,syncNum:4990,status:4
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:107	[finished process is 198/200,unfinished is 2/200]
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:109	[finished process is 198/200,unfinished is 2/200]
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:125	taskIndex:197 (start:985010:end:990010),wid:8,syncNum:5000,status:4
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:119	workerid 10 executedJobs:10
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:117	workerid 8 executedJobs:10
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:127	taskIndex:189 (start:945010:end:950010),wid:10,syncNum:5000,status:4
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:107	[finished process is 199/200,unfinished is 1/200]
 
-2025-02-17T22:52:40+08:00	INFO	plugin/mysql_plugin.go:110	Successfully inserted 500 records into table test2
-2025-02-17T22:52:40+08:00	INFO	plugin/mysql_plugin.go:110	Successfully inserted 500 records into table test2
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:119	workerid 17 executedJobs:10
+2025-02-18T06:22:40+08:00	INFO	plugin/mysql_plugin.go:110	Successfully inserted 500 records into table test2
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:125	taskIndex:199 (start:995010:end:1000000),wid:0,syncNum:4990,status:4
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:109	[finished process is 199/200,unfinished is 1/200]
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:107	[finished process is 200/200,unfinished is 0/200]
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:127	taskIndex:195 (start:975010:end:980010),wid:17,syncNum:5000,status:4
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:117	workerid 0 executedJobs:10
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:109	[finished process is 200/200,unfinished is 0/200]
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:125	taskIndex:198 (start:990010:end:995010),wid:9,syncNum:5000,status:4
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:127	taskIndex:198 (start:990010:end:995010),wid:4,syncNum:5000,status:4
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:117	workerid 9 executedJobs:10
 
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:119	workerid 4 executedJobs:10
-
-2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:130	from mysql reader sync2 mysql  totalSyncNum 999990
+2025-02-18T06:22:40+08:00	INFO	scheduler/scheduler.go:128	from [local_dw.test.test2]mysql reader sync to [local_dw.test2.test2] mysql writer  totalSyncNum 999990
 ```
