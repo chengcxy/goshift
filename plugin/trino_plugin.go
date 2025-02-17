@@ -117,10 +117,12 @@ func (t *TrinoReader) Connect(config map[string]interface{}) error {
 	)
 	db, err := sql.Open("trino", dsn)
 	if err != nil {
+		logger.Errorf("TrinoReader.Connect.sql.open trino failed %v",err)
 		return errors.New(fmt.Sprintf("open trino error:%v", err))
 	}
 	err = db.Ping()
 	if err != nil {
+		logger.Errorf("TrinoReader.Connect.ping trino failed %v",err)
 		return errors.New(fmt.Sprintf("ping trino error:%v", err))
 	}
 	db.SetConnMaxLifetime(0)
@@ -137,7 +139,7 @@ func (t *TrinoReader) Connect(config map[string]interface{}) error {
 		db.SetMaxIdleConns(20)
 	}
 	t.client = db
-	logger.Infof("connect %s trino success", dsn)
+	logger.Infof("TrinoReader.Connect trino success")
 	return nil
 }
 

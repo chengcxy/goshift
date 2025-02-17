@@ -178,10 +178,12 @@ func (m *MysqlReader) Connect(config map[string]interface{}) error {
 	)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
+		logger.Errorf("MysqlReader.Connect.sql.open mysql failed %v",err)
 		return errors.New(fmt.Sprintf("open mysql error:%v", err))
 	}
 	err = db.Ping()
 	if err != nil {
+		logger.Errorf("MysqlReader.Connect.ping mysql failed %v",err)
 		return errors.New(fmt.Sprintf("ping mysql error:%v", err))
 	}
 	db.SetConnMaxLifetime(0)
@@ -198,7 +200,7 @@ func (m *MysqlReader) Connect(config map[string]interface{}) error {
 		db.SetMaxIdleConns(20)
 	}
 	m.client = db
-	logger.Infof("connect %s mysql success", config)
+	logger.Infof("connect mysql success")
 	return nil
 }
 
@@ -209,7 +211,7 @@ func (m *MysqlReader) QueryContext(ctx context.Context, query string, args ...in
 	}
 	rows, err := stam.Query(args...)
 	if err != nil {
-		logger.Infof("QueryContext stmt:%s error:%+v", query, err)
+		logger.Errorf("QueryContext stmt:%s error:%+v", query, err)
 		return nil, nil, err
 	}
 	defer rows.Close()
