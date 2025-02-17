@@ -1,88 +1,51 @@
-# goshift Data Syncer for Other Databases
+# goshift data syncer 2 other database
 
-## 1. Design Concept
+# 一.设计理念
+```
+mysql或者其他数据库创建一个task表。
+from_db_type代表读取的数据库类型
+from_app为读取的系统
+from_db代表读取的库名
+from_tanle为读取的表。
+同理
+to_db_type为写入的数据库类型
+to_app为写入的系统
+to_db为写入的db,
+to_table为写入的表。
+params字段代表参数,params的值为{"split":{"pk":["id"]},"worker_num":20,read_batch:5000,write_batch:500}
+
+split下面的pk代表切分键,worker_num为协程数，read_batch为读取的批次大小，write_batch为写入的批次大小。
+
+配置文件为json配置文件格式,里面内容为{"from":{"mysql":{$from_app_$from_db:{数据库链接}}}。
+
+当运行一个任务时，先读取数据库得到一条数据。根据from_db_type得到客户端，比如from_db_type=mysql，说明读取者是mysqlclient,from_app+from_db 组成唯一的key，从json文件里可以获取到reader链接数据库的参数。同理to_db_type=mysql，也可以获取mysqlclient的链接信息。
+为了考虑拓展性，这个项目下有plugin目录,plugin_interface.go里面定义reader的接口，reader接口有Connect方法可以自动读取config配置创建数据库链接，同时再有Read方法，根据params参数自动切分并行执行读取数据。再定义writer接口，writer接口有Connect方法可以自动读取config配置创建数据库链接,同时再有Write方法,根据write_batch切分写入。
+使用Go开发充分利用并发执行任务能力。
 
 
-Create a task table in MySQL or other databases.
-- `from_db_type` represents the type of the source database.
-- `from_app` represents the source system.
-- `from_db` represents the source database name.
-- `from_table` represents the source table.
+运行模式，命令行参数可以执行单个主键id 
+当命令行解析参数后查询task_id再数据库里的配置，params参数设置了worker_num=20 则执行数据同步任务时会继续起20个协程。
+为了减少对数据库的读写压力，减少并发资源占用,建议不超过20个线程
 
-Similarly:
-- `to_db_type` represents the type of the destination database.
-- `to_app` represents the destination system.
-- `to_db` represents the destination database.
-- `to_table` represents the destination table.
+Run方法逻辑:
+  1.1 根据命令行参数获取task_id,加载数据库数据,赋值job.TaskMeta指针
+  1.2 根据from_db_type/to_db_type获取plugin的reader和writer.
+  1.3 解析数据库的数据的taskMeta,确定起多少个worker.
+  1.4 调用reader.SplitTaskParams方法获取一共需要执行多少任务
+  1.5 创建tasks channel,result channel
+  1.6 调度器的worker函数监听tasks channel，获取待执行的分片任务参数,reader负责根据分片任务参数读取数据，调用writer的write方法写到目标库,更新完成进度
+  1.7 监听结果通道,打印同步进度
 
-The `params` field contains the parameters. The value of `params` is:
-```json
-{
-  "split": {"pk": ["id"]},
-  "worker_num": 20,
-  "read_batch": 5000,
-  "write_batch": 500
-}
+后续拓展：
+api接口管理能力,前端页面的异步执行查看进度功能,因函数封装了执行单个task_id的逻辑,后续可封装成Event,生成异步任务id,扔到消息队列,
+启动一个消费者监听消费队列更新任务状态，形成闭环
 ```
 
-- The pk under split represents the partition key.
-- worker_num is the number of goroutines.
-- read_batch is the batch size for reading.
-- write_batch is the batch size for writing.
 
-The configuration file follows the JSON format, and the contents look like this:
-
-```json
-{
-  "from": {
-    "mysql": {
-      "$from_app_$from_db": {
-        "database_connection_details"
-      }
-    }
-  },
-  "to": {
-    "mysql": {
-      "$to_app_$to_db": {
-        "database_connection_details"
-      }
-    }
-  }
-}
+## 二.创建数据库表
 ```
+在配置文件local.json里task_meta.db参数所在的库建表
 
-When running a task, first, read the database to get a record. According to from_db_type, get the corresponding client. For example, if from_db_type is mysql, the reader is a mysqlclient. The key is composed of from_app + from_db, which can be used to fetch the reader configuration from the JSON file. Similarly, if to_db_type is mysql, you can get the connection information for the mysqlclient.
-
-To support extensibility, the project contains a plugin directory. The plugin_interface.go defines the reader interface. The reader interface has a Connect method to automatically read the config file and create a database connection. Additionally, it has a Read method that automatically partitions and performs concurrent reading according to the params. The writer interface is also defined, which has a Connect method for creating the database connection and a Write method that writes data to the target database in batches.
-
-This project is developed in Go and fully utilizes concurrency for task execution.
-
-
-Execution Mode
-
-The command-line parameters allow the execution of a single primary key id. After parsing the parameters, it queries the task_id and its configuration from the database. If params sets worker_num = 20, the data synchronization task will start 20 goroutines.
-
-To reduce the pressure on the database's read and write operations and minimize concurrent resource usage, it is recommended not to exceed 20 threads.
-
-Run Method Logic:
-- 1.1 Fetch the task_id from command-line parameters, load database data, and assign it to job.TaskMeta pointer.
-- 1.2 Get the reader and writer plugins based on from_db_type and to_db_type
-- 1.3 Parse the task metadata from the database and determine how many workers to start
-- 1.4 Call the reader.SplitTaskParams method to determine how many tasks need to be executed.
-- 1.5 Create tasks and result channels. 
-- 1.6 The scheduler's worker function listens on the tasks channel, retrieves partition task parameters, and the reader is responsible for reading data based on those parameters. The writer writes data to the target database and updates the progress.
-- 1.7 Monitor the result channel and print the synchronization progress.
-
-Future Expansion:
-API interface management, asynchronous execution progress monitoring via the front-end page. Since the function encapsulates logic for executing a single task_id, it can be packaged as an Event, generate an asynchronous task ID, and place it into a message queue. A consumer will listen to the queue and update task statuses, forming a closed loop.
-
-
-
-## 2. Create Database Table
-
-In the local.json configuration file, create the table in the database specified by the task_meta.db parameter.
-
-```
 CREATE TABLE `task_def_sync_manager` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '同步任务id',
   `from_app` varchar(50) DEFAULT NULL COMMENT '读取的业务系统',
@@ -109,28 +72,26 @@ VALUES
 ```
 
 
-## 3. Assign Environment Variables in Configuration File
+## 三.配置文件里的环境变量赋值
 
 ```
-Check the environment settings for task_meta in the etc directory (taking local environment for Linux or macOS as an example). Set environment variables. The variable names should match those in the configuration file.
-
-
+查看etc目录下某个环境(以local环境linux或mac系统为案例)task_meta的配置，设置环境变量,变量名自定义和配置文件保持一致即可。
 export LOCAL_DW_MYSQL_Z_ETL_HOST="localhost"
 export LOCAL_DW_MYSQL_Z_ETL_USER="z_etl"
 export LOCAL_DW_MYSQL_Z_ETL_PASSWORD="密码自定义"
 ```
 
-## 4. Build
+## 四.编译 build
 
-```bash
-//For linux
+```
+//linux系统
 make linux
 
-//For macOs
+//macOs系统
 make mac
 ```
 
-## 5.Command Line Parameters
+## 五.命令行参数
 
 
 ```
@@ -152,13 +113,13 @@ Usage of ./goshift:
 ```
 
 
-## 6.demo
+## 六.demo
 
 ```
 ./goshift -c ../etc/ -e local -id 5
 ```
 
-## 7. Log 
+## 七. Log 
 
 ```
 2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:109	[finished process is 195/200,unfinished is 5/200]
@@ -204,4 +165,3 @@ Usage of ./goshift:
 
 2025-02-17T22:52:40+08:00	INFO	scheduler/scheduler.go:130	from mysql reader sync2 mysql  totalSyncNum 999990
 ```
-
