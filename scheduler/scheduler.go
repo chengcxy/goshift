@@ -125,7 +125,9 @@ func (s *Scheduler) Run() error {
 		logger.Infof("taskIndex:%d (start:%d:end:%d),wid:%d,syncNum:%d,status:%d \n", r.Param.Index, r.Param.Start, r.Param.End, r.Wid, r.SyncNum, r.Status)
 		totalSyncNum += r.SyncNum
 	}
-	logger.Infof("from %s reader sync2 %s  totalSyncNum %d ", tm.FromDbType, tm.ToDbType, totalSyncNum)
+	logger.Infof("from [%s.%s.%s]%s reader sync to [%s.%s.%s] %s writer  totalSyncNum %d ", tm.FromApp,tm.FromDb,tm.FromTable,tm.FromDbType, tm.ToApp,tm.ToDb,tm.ToTable,tm.ToDbType, totalSyncNum)
+	reader.Close()
+	writer.Close()
 	return nil
 }
 
