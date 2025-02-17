@@ -23,7 +23,6 @@ from %s.%s
 where %s
 `
 
-
 var BaseGetTrinoNextPk = `
 select a.%s as nextId
 from (
@@ -38,26 +37,25 @@ limit 1
 
 type TrinoReader struct {
 	MysqlReader
-	addWhere string
+	addWhere    string
 	partionDate string
 }
 
-
 func (t *TrinoReader) SplitJobParams(ctx context.Context, tm *job.TaskMeta) (Splits []*job.JobParam) {
-	var minId,maxId int64
+	var minId, maxId int64
 	partion := tm.Params["partion"].(map[string]interface{})
 	partionColumn := partion["column"].(string)
 	partionDateCondition := partion["partion_date"].(string)
-	partionDate,err := utils.GetTimeValue(partionDateCondition)
-	if err != nil{
-		logger.Infof("utils.GetTimeValue(partionDateCondition=%s) error:%v",partionDateCondition,err)
+	partionDate, err := utils.GetTimeValue(partionDateCondition)
+	if err != nil {
+		logger.Infof("utils.GetTimeValue(partionDateCondition=%s) error:%v", partionDateCondition, err)
 		return
 	}
 	t.partionDate = partionDate
-	t.addWhere = fmt.Sprintf("%s=?",partionColumn)
-	query := fmt.Sprintf(BaseQueryTrinoMinMax, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable,t.addWhere)
+	t.addWhere = fmt.Sprintf("%s=?", partionColumn)
+	query := fmt.Sprintf(BaseQueryTrinoMinMax, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable, t.addWhere)
 	logger.Infof("TrinoReader.SplitJobParams.query %s", query)
-	err = t.client.QueryRowContext(ctx, query,t.partionDate).Scan(&minId, &maxId)
+	err = t.client.QueryRowContext(ctx, query, t.partionDate).Scan(&minId, &maxId)
 	if err != nil {
 		logger.Errorf("get min max error %v", err)
 		return nil
@@ -67,10 +65,10 @@ func (t *TrinoReader) SplitJobParams(ctx context.Context, tm *job.TaskMeta) (Spl
 	end := maxId
 	logger.Infof("minid:%d,maxId:%d", minId, maxId)
 	for start < end {
-		q := fmt.Sprintf(BaseGetTrinoNextPk, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable, tm.SrcPk, start,t.addWhere,tm.ReadBatch, tm.SrcPk)
+		q := fmt.Sprintf(BaseGetTrinoNextPk, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable, tm.SrcPk, start, t.addWhere, tm.ReadBatch, tm.SrcPk)
 		logger.Infof("query next pk is \n %s", q)
 		var nextId int64
-		err := t.client.QueryRowContext(ctx, q,t.partionDate).Scan(&nextId)
+		err := t.client.QueryRowContext(ctx, q, t.partionDate).Scan(&nextId)
 		if err != nil {
 			fmt.Errorf("nextId err is %v", err)
 			break
@@ -87,15 +85,14 @@ func (t *TrinoReader) SplitJobParams(ctx context.Context, tm *job.TaskMeta) (Spl
 	return
 }
 
-
 func (t *TrinoReader) Read(ctx context.Context, wid int, j *job.Job, finishedChan chan int, tm *job.TaskMeta, writer Writer) *job.JobResult {
 	defer func() {
 		finishedChan <- 1
 	}()
 	start, end := j.Param.Start, j.Param.End
 	logger.Infof("ExecuteTask start is %d,end is %d", start, end)
-	query := fmt.Sprintf(BaseQueryTrino, tm.FromDb, tm.FromTable, tm.SrcPk, tm.SrcPk,t.addWhere)
-	datas, _, err := t.QueryContext(ctx, query, start, end,t.partionDate)
+	query := fmt.Sprintf(BaseQueryTrino, tm.FromDb, tm.FromTable, tm.SrcPk, tm.SrcPk, t.addWhere)
+	datas, _, err := t.QueryContext(ctx, query, start, end, t.partionDate)
 	if err != nil {
 		return &job.JobResult{
 			Param:  j.Param,
@@ -117,12 +114,12 @@ func (t *TrinoReader) Connect(config map[string]interface{}) error {
 	)
 	db, err := sql.Open("trino", dsn)
 	if err != nil {
-		logger.Errorf("TrinoReader.Connect.sql.open trino failed %v",err)
+		logger.Errorf("TrinoReader.Connect.sql.open trino failed %v", err)
 		return errors.New(fmt.Sprintf("open trino error:%v", err))
 	}
 	err = db.Ping()
 	if err != nil {
-		logger.Errorf("TrinoReader.Connect.ping trino failed %v",err)
+		logger.Errorf("TrinoReader.Connect.ping trino failed %v", err)
 		return errors.New(fmt.Sprintf("ping trino error:%v", err))
 	}
 	db.SetConnMaxLifetime(0)

@@ -1,7 +1,7 @@
 linux:fmt
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./cmd/goshift ./cmd/main.go
 mac:fmt
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o ./cmd/goshift ./cmd/main.go
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o ./cmd/goshift_mac ./cmd/main.go
 fmt:
 	gofmt -l -w cmd
 	gofmt -l -w configor

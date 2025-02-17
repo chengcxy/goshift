@@ -1,11 +1,11 @@
 package utils
 
 import (
-	"fmt"
-	"time"
-	"strings"
-	"strconv"
 	"errors"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
 )
 
 const (
@@ -78,8 +78,6 @@ func MonthStartDayDate() time.Time {
 	return monthStart
 }
 
-
-
 func GetTimeValue(v string) (string, error) {
 	if strings.TrimSpace(v) == "$today" {
 		return GetDateFromToday(0), nil
@@ -99,7 +97,6 @@ func GetTimeValue(v string) (string, error) {
 		return GetDateFromToday(n), nil
 	}
 }
-
 
 func GetDateFromToday(interval int) string {
 	return time.Now().AddDate(0, 0, interval).Format(DayFormatter)

@@ -123,7 +123,7 @@ func (m *MysqlReader) Write(ctx context.Context, wid int, j *job.Job, datas []ma
 }
 
 func (m *MysqlReader) SplitJobParams(ctx context.Context, tm *job.TaskMeta) (Splits []*job.JobParam) {
-	var minId,maxId int64
+	var minId, maxId int64
 	query := fmt.Sprintf(BaseQueryMinMax, tm.SrcPk, tm.SrcPk, tm.FromDb, tm.FromTable)
 	logger.Infof("MysqlReader.SplitJobParams.query %s", query)
 	logger.Infof("MysqlReader.client %v", m.client)
@@ -178,12 +178,12 @@ func (m *MysqlReader) Connect(config map[string]interface{}) error {
 	)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		logger.Errorf("MysqlReader.Connect.sql.open mysql failed %v",err)
+		logger.Errorf("MysqlReader.Connect.sql.open mysql failed %v", err)
 		return errors.New(fmt.Sprintf("open mysql error:%v", err))
 	}
 	err = db.Ping()
 	if err != nil {
-		logger.Errorf("MysqlReader.Connect.ping mysql failed %v",err)
+		logger.Errorf("MysqlReader.Connect.ping mysql failed %v", err)
 		return errors.New(fmt.Sprintf("ping mysql error:%v", err))
 	}
 	db.SetConnMaxLifetime(0)

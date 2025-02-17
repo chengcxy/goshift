@@ -66,7 +66,7 @@ func (s *Scheduler) Run() error {
 
 	err = reader.Connect(readerConfig.(map[string]interface{}))
 	if err != nil {
-		logger.Errorf("Reader connect failed error:%v",err)
+		logger.Errorf("Reader connect failed error:%v", err)
 		return err
 	}
 	writer, err := plugin.GetWriter(tm.ToDbType)
@@ -82,7 +82,7 @@ func (s *Scheduler) Run() error {
 	}
 	err = writer.Connect(writerConfig.(map[string]interface{}))
 	if err != nil {
-		logger.Errorf("writer connect failed:%v",err)
+		logger.Errorf("writer connect failed:%v", err)
 		return err
 	}
 	//所有的切分任务
@@ -125,7 +125,7 @@ func (s *Scheduler) Run() error {
 		logger.Infof("taskIndex:%d (start:%d:end:%d),wid:%d,syncNum:%d,status:%d \n", r.Param.Index, r.Param.Start, r.Param.End, r.Wid, r.SyncNum, r.Status)
 		totalSyncNum += r.SyncNum
 	}
-	logger.Infof("from [%s.%s.%s]%s reader sync to [%s.%s.%s] %s writer  totalSyncNum %d ", tm.FromApp,tm.FromDb,tm.FromTable,tm.FromDbType, tm.ToApp,tm.ToDb,tm.ToTable,tm.ToDbType, totalSyncNum)
+	logger.Infof("from [%s.%s.%s]%s reader sync to [%s.%s.%s] %s writer  totalSyncNum %d ", tm.FromApp, tm.FromDb, tm.FromTable, tm.FromDbType, tm.ToApp, tm.ToDb, tm.ToTable, tm.ToDbType, totalSyncNum)
 	reader.Close()
 	writer.Close()
 	return nil
@@ -142,7 +142,7 @@ func NewScheduler(ctx context.Context, config, globalConfig *configor.Config, st
 	conf, _ := s.Config.Get("task_meta")
 	taskclient, err := NewMySQLTaskDBClient(conf.(map[string]interface{}))
 	if err != nil {
-		logger.Errorf("get taskDbclient error %v",err)
+		logger.Errorf("get taskDbclient error %v", err)
 		return nil, err
 	}
 	s.taskClient = taskclient
