@@ -95,24 +95,24 @@ In the local.json configuration file, create the table in the database specified
 
 ```
 CREATE TABLE `task_def_sync_manager` (
-  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '同步任务id',
-  `from_app` varchar(50) DEFAULT NULL COMMENT '读取的业务系统',
-  `from_db_type` varchar(50) DEFAULT NULL COMMENT '读取的数据源类型',
-  `from_db` varchar(20) DEFAULT NULL COMMENT '读取的数据库',
-  `from_table` varchar(255) DEFAULT '' COMMENT '读取表',
-  `to_app` varchar(50) DEFAULT NULL COMMENT '写入的业务系统',
-  `to_db_type` varchar(20) DEFAULT NULL COMMENT '写入数据源类型',
-  `to_db` varchar(20) DEFAULT NULL COMMENT '写入数据库',
-  `to_table` varchar(255) DEFAULT NULL COMMENT '写入数据表',
-  `params` text COMMENT '规则',
-  `online_status` int(11) DEFAULT NULL COMMENT '在线状态1在线0下线',
-  `task_desc` text COMMENT '任务描述',
-  `task_status` varchar(100) DEFAULT NULL COMMENT '任务状态',
-  `owner` varchar(100) DEFAULT NULL COMMENT '开发人',
-  `create_time` datetime NOT NULL COMMENT '创建时间',
-  `update_time` datetime NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Sync Task ID',
+  `from_app` varchar(50) DEFAULT NULL COMMENT 'Source business system',
+  `from_db_type` varchar(50) DEFAULT NULL COMMENT 'Source database type',
+  `from_db` varchar(20) DEFAULT NULL COMMENT 'Source database name',
+  `from_table` varchar(255) DEFAULT '' COMMENT 'Source table',
+  `to_app` varchar(50) DEFAULT NULL COMMENT 'Target business system',
+  `to_db_type` varchar(20) DEFAULT NULL COMMENT 'Target database type',
+  `to_db` varchar(20) DEFAULT NULL COMMENT 'Target database name',
+  `to_table` varchar(255) DEFAULT NULL COMMENT 'Target table',
+  `params` text COMMENT 'Sync rules',
+  `online_status` int(11) DEFAULT NULL COMMENT 'Online status (1: Online, 0: Offline)',
+  `task_desc` text COMMENT 'Task description',
+  `task_status` varchar(100) DEFAULT NULL COMMENT 'Task status',
+  `owner` varchar(100) DEFAULT NULL COMMENT 'Developer',
+  `create_time` datetime NOT NULL COMMENT 'Creation time',
+  `update_time` datetime NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='同步任务管理';、
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Sync task management';
 
 INSERT INTO `task_def_sync_manager` (`id`, `from_app`, `from_db_type`, `from_db`, `from_table`, `to_app`, `to_db_type`, `to_db`, `to_table`, `params`, `online_status`, `task_desc`, `task_status`, `owner`, `create_time`, `update_time`)
 VALUES
@@ -149,17 +149,18 @@ make mac
 
 Usage of ./goshift:
   -UsedEnv
-    	是否走环境变量 (default true)
+    	Whether to use environment variables (default true)
   -c string
-    	配置文件目录 (default "../etc/")
+    	Configuration file directory (default "../etc/")
   -cmd string
-    	命令 (default "sync")
+    	Command (default "sync")
   -e string
-    	运行的环境-json文件前缀 dev/test/prod/local (default "local")
+    	Running environment - JSON file prefix: dev/test/prod/local (default "local")
   -id string
-    	任务id (default "1")
+    	Task ID (default "1")
   -mode string
-    	模式 (default "init")
+    	Mode (default "init")
+
 ```
 
 
