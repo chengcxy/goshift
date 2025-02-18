@@ -87,6 +87,9 @@ func (s *Scheduler) Run() error {
 	}
 	//所有的切分任务
 	JobParamsSplits := reader.SplitJobParams(s.ctx, tm)
+	if len(JobParamsSplits) < tm.WorkerNum{
+		tm.WorkerNum = len(JobParamsSplits)
+	}
 	totalJobNum := len(JobParamsSplits)
 	jobParamsChan := make(chan *job.JobParam, 0)
 	finishedChan := make(chan int, 0)
